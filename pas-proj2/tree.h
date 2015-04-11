@@ -11,10 +11,10 @@ typedef struct var_id {
 } VAR_ID, *VAR_ID_LIST;
 
 /* Node to store id and type for function_heading */
-typedef struct func_head {
+typedef struct func_heading {
     ST_ID	id;
-    TYPE	type;
-} FUNC_HEAD;
+    TYPE	ret_type;
+} FUNC_HEADING;
 
 /* Procedure and function prototype directives */
 typedef enum { DIR_EXTERNAL, DIR_FORWARD } DIRECTIVE;
@@ -52,13 +52,13 @@ void enter_main_body();
 
 void exit_main_body();
 
-void build_func_decl(ST_ID id, TYPE type, DIRECTIVE dir );
+void install_func_head(ST_ID id, TYPE type, DIRECTIVE dir);
 
-int enter_function(ST_ID id, TYPE type, char *global_func_name);
+int enter_func(ST_ID id, TYPE ret_type);
 
-void enter_func_body(char *global_func_name, TYPE type, int loc_var_offset);
+void enter_func_body(ST_ID id, TYPE ret_type, int loc_var_offset);
 
-void exit_func_body(char *global_func_name, TYPE type);
+void exit_func_body(ST_ID id, TYPE ret_type);
 
 void install_params(PARAM_LIST list);
 

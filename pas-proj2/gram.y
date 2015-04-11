@@ -87,7 +87,7 @@ void yyerror(const char *);
     INDEX_LIST   y_indexlist;
     PARAM        y_param;
     VAR_ID_LIST  y_varidlist;
-    FUNC_HEAD    y_funchead;
+    FUNC_HEADING y_funchead;
     DIRECTIVE 	 y_dir;
 }
 
@@ -539,15 +539,15 @@ variable_declaration:
   ;
 
 function_declaration:
-    function_heading semi directive_list semi { build_func_decl($1.id, $1.type, $3); }
-  | function_heading semi { $<y_cint>$ = enter_function($1.id, $1.type, st_get_id_str($1.id));} 
-    any_declaration_part { enter_func_body(st_get_id_str($1.id), $1.type, $<y_cint>3); } 
-    statement_part semi { exit_func_body(st_get_id_str($1.id), $1.type);}
+    function_heading semi directive_list semi { install_func_head($1.id, $1.ret_type, $3); }
+  | function_heading semi { $<y_cint>$ = enter_func($1.id, $1.ret_type);} 
+    any_declaration_part { enter_func_body($1.id, $1.ret_type, $<y_cint>3); } 
+    statement_part semi { exit_func_body($1.id, $1.ret_type);}
   ;
 
 function_heading:
-    LEX_PROCEDURE new_identifier optional_par_formal_parameter_list {$$.id = $2, $$.type = ty_build_func(ty_build_basic(TYVOID), NULL, FALSE);}
-  | LEX_FUNCTION new_identifier optional_par_formal_parameter_list functiontype { $$.id = $2, $$.type = ty_build_func($4, NULL, FALSE);}
+    LEX_PROCEDURE new_identifier optional_par_formal_parameter_list {$$.id = $2, $$.ret_type = ty_build_basic(TYVOID);}
+  | LEX_FUNCTION new_identifier optional_par_formal_parameter_list functiontype { $$.id = $2, $$.ret_type = $4;}
   ;
 
 directive_list:

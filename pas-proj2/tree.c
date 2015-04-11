@@ -340,39 +340,44 @@ void exit_main_body(){
   b_func_epilogue("main");
 }
 
-/* Void function to build function declaration and install into the symbol table */
-void build_func_decl(ST_ID id, TYPE type, DIRECTIVE dir){
+/* Function to install function/procedure heading into symbol table.
+   Examples: 
+   Procedure scanf; External;
+   Function getchar : Char; External;
+   Function abc : Integer; Forward;
+*/
+void install_func_head(ST_ID id, TYPE ret_type, DIRECTIVE dir){
    PARAM_LIST params;
-   BOOLEAN check;
-   TYPE ret_type;
+   BOOLEAN check_args;
 
-   //Creates data record
-   ST_DR data_rec;
-   data_rec = stdr_alloc();
+   /* Creates empty data record */
+   ST_DR data_rec = stdr_alloc();
+
+   /* Assign tag as a GDECL */
    data_rec->tag = GDECL;
-
-   if (dir == DIR_EXTERNAL) {
-      //retrieve return type
-      //set check args to false and return new functype
-      data_rec->u.decl.sc = EXTERN_SC;
-      ret_type = ty_query_func(type, &params, &check);
-      data_rec->u.decl.type = ty_build_func(ret_type, params, FALSE);
-   }
-   else if (dir == DIR_FORWARD) {
-      //type is not altered
-      data_rec->u.decl.sc = NO_SC;
-      data_rec->u.decl.type = type; 
-   }
-   else {
-      error("How did I get here...I'm in build_func_decl()");
-   }
-
+   /* Set reference parameter to FALSE */
    data_rec->u.decl.is_ref = FALSE;
+   /* Set the function name */
    data_rec->u.decl.v.global_func_name = st_get_id_str(id);
 
-   //Install into symbol table
-   if (!st_install(id,data_rec)) {
-      //Error message if doesn't work
+   /*If function/procedure is declared as External then Storage Class = EXTERN_SC,
+   check_args = FALSE which is in type, so we need to build a function type*/
+   if (dir == DIR_EXTERNAL) {      
+      data_rec->u.decl.sc = EXTERN_SC;
+      data_rec->u.decl.type = ty_build_func(ret_type, params, FALSE);
+   }
+   /*Else function/procedure is declared as Forward then Storage Class = NO_SC,
+   check_args = TRUE which is in type, so we need to build a function type*/
+   else if (dir == DIR_FORWARD) {
+      data_rec->u.decl.sc = NO_SC;
+      data_rec->u.decl.type = ty_build_func(ret_type, params, TRUE);
+   }
+   else {
+      error("How did I get here...I'm in install_func_head()");
+   }   
+
+   /* Install into symbol table */
+   if (!st_install(id, data_rec)) {
       error("Duplicate forward or external function declaration");
       free(data_rec);
    }
@@ -384,89 +389,77 @@ void build_func_decl(ST_ID id, TYPE type, DIRECTIVE dir){
 was a GDECL of a function of the same type that is not external(has to forward declaration).  Look at the storage 
 class to see if external or not.  Anything else is semantic error(FDECL is duplicate definition, not a function, function
 but args or return type don't match) */
-int enter_function(ST_ID id, TYPE type, char *global_func_name) {
+int enter_func(ST_ID id, TYPE ret_type) {
    ST_DR data_rec;
-   PARAM_LIST param1, param2;
-   BOOLEAN check1, check2;
-   TYPE type1, type2;
+   PARAM_LIST params;
+   BOOLEAN check_args;
+   TYPE ret_type1;
    int block;
    int init_offset;
 
-   //Call st_lookup to see if id is previously installed in current block
+   /* Call st_lookup to see if id is previously installed in current block */
    data_rec = st_lookup(id, &block);
 
-   //If not previously installed then install as new FDECL
+   /* If not previously installed then install as new FDECL */
    if (data_rec == NULL) {
       data_rec = stdr_alloc();
       data_rec->tag = FDECL;
-      data_rec->u.decl.type = type;
+      data_rec->u.decl.type = ty_build_func(ret_type, params, FALSE);
       data_rec->u.decl.sc = NO_SC;
       data_rec->u.decl.is_ref = FALSE;
-      data_rec->u.decl.v.global_func_name = global_func_name;
+      data_rec->u.decl.v.global_func_name = st_get_id_str(id);
 
       if (!st_install(id, data_rec)) {
-         error("Couldn't install into symbol table inside of enter_function()");
-         free(data_rec);
+        error("Couldn't install into symbol table inside of enter_func()");
+        free(data_rec);
       }
    } 
    else {
-      //Previous decl must be GDECL with same type and no_sc as storage class
+      /* Previous installment must be GDECL with same type and NO_SC as storage class */
       if (data_rec->tag != GDECL || data_rec->u.decl.sc != NO_SC) {
-         error("Error in enter_function(), no GDECL or no NO_SC");
-         return;
+        error("Error in enter_func(), no GDECL or no NO_SC");
+        return;
       } 
-      else { //check types were the same
-         //get return types
-	 	 type1 = ty_query_func(type, &param1, &check1); //prev decl
-         type2 = ty_query_func(data_rec->u.decl.type, &param2, &check2); //curr decl
+      else {
+        /* Check to see if the return type passed in matches the return type you get with the st_lookup */
+ 	      ret_type1 = ty_query_func(data_rec->u.decl.type, &params, &check_args);
 
-         //check equality
-         if (ty_test_equality(type1, type2) == TRUE) { //if same
-            //change tag from GDECL to FDECL
-            data_rec->tag = FDECL;
-            data_rec->u.decl.v.global_func_name = global_func_name;
-         }
-         else { //not equal
-            error("Error in enter_function(), types not equal");
-         }
+        if (ty_test_equality(ret_type, ret_type1) == TRUE) {
+          /*Change tag from GDECL to FDECL */
+          data_rec->tag = FDECL;
+        }
+        else {
+          error("Error in enter_func(), return types not equal");
+        }
       }
    }
 
    // fi_top++; // increment stack
    // func_id_stack[fi_top] = id; //set value
-   //this will be used to detect return assignments within body of fcn
 
-   //enter local scope of the function
-   st_enter_block(); //informs symtab new block entered, increments cur block number
+   /* Enter local scope of the function */
+   st_enter_block();
 
-   //initiialize the formal parameter offset calculation
-   b_init_formal_param_offset();//emits no assembly code
-
-   //if local function
-   if (st_get_cur_block() > 1) { //globals in block 1, predefined in block 0
-      //first param is reference link (shadow parameter)
-      b_get_formal_param_offset(TYPTR); //allocates 8bytes and sets return_value_offset to allocated space
-   }
+   /* Initiialize the formal parameter offset calculation */
+   b_init_formal_param_offset();
    
-   //install each parameter (in order) as new PDECL with given TYPE
-   install_params(param1);
+   /* Install parameters into symbol table(from left to right) as new PDECL */
+   install_params(params);
 
-   //get initial offset
+   /* Get initial offset */
    init_offset = b_get_local_var_offset();
-
-   if (type1 == TYVOID) {
-      init_offset = init_offset - 8; //if nonvoid, 8 is subtracted from offset
+   //error("in enter_func(), offset is %d ", init_offset);
+   if (data_rec->u.decl.type == TYVOID) {
+      init_offset -= 8;
    }
    
    return init_offset;
 }
 
-/************************************************************************
- * Prepares for the body of a function, emits code to store formal      *
- * parameters and allocates space for the return value and local vars   *
- ************************************************************************/
-void enter_func_body(char *global_func_name, TYPE type, int loc_var_offset) {
-   TYPE func_type;
+/* Emits code to store formal
+   parameters and allocates space for the return value and local vars */
+void enter_func_body(ST_ID id, TYPE ret_type, int loc_var_offset) {
+   TYPE ret_type1;
    TYPE param_type;
    PARAM_LIST params;
    BOOLEAN check;
@@ -477,18 +470,25 @@ void enter_func_body(char *global_func_name, TYPE type, int loc_var_offset) {
    ST_DR data_rec;
    long low,high;
 
-   //query the function to get variables
-   func_type = ty_query_func(type, &params, &check);
-   func_tag = ty_query(func_type);
+   //error("local offset is %d", loc_var_offset);
+   /* Enter the function */
+   b_func_prologue(st_get_id_str(id));
 
-   //is local function? ignore for now
+   /* Query the function to get parameters */
+   data_rec = st_lookup(id, &block);
+   ret_type1 = ty_query_func(data_rec->u.decl.type, &params, &check);
+   func_tag = ty_query(ret_type);
+
+   // TODO: Still need local variables section for extra credit
+
+
 
    while (params != NULL) {
       param_tag = ty_query(params->type);
       data_rec = st_lookup(params->id, &block);
 
-      if (param_tag == TYSUBRANGE) { //subrange types use base type
-         param_type = ty_query_subrange(type, &low, &high);
+      if (param_tag == TYSUBRANGE) { 
+         param_type = ty_query_subrange(ret_type1, &low, &high);
          b_store_formal_param(ty_query(param_type));
       }
       else if (data_rec->u.decl.is_ref == TRUE) { //VAR params
@@ -500,61 +500,51 @@ void enter_func_body(char *global_func_name, TYPE type, int loc_var_offset) {
       params = params->next;
    }
 
-   //pascal function (non-void types)
+   /* If function not a procedure */
    if (func_tag != TYVOID) {
+      /* Allocate size for return value */
       b_alloc_return_value();
    }
 
-   //local vars
-   b_alloc_local_vars(loc_var_offset - b_get_local_var_offset());
+   /* Allocate size for local variables */
+   b_alloc_local_vars(loc_var_offset);
 }
 
-/************************************************************************
- * Emits code to end a function body & exits scope of function           *
- ************************************************************************/
-void exit_func_body(char *global_func_name, TYPE type) {
-   TYPE func_type;
-   PARAM_LIST params;
-   BOOLEAN check;
-   TYPETAG func_tag;
-   long low,high;
+/* Emits code to end a function body & exits scope of function */
+void exit_func_body(ST_ID id, TYPE type) {
+  TYPE func_type;
+  PARAM_LIST params;
+  BOOLEAN check;
+  TYPETAG func_tag;
+  long low,high;
 
-   //query function
-   func_type = ty_query_func(type, &params, &check);
-   func_tag = ty_query(func_type);
-   
-   //pops the function id from the global stack;
-   //fi_top--;
+  func_tag = ty_query(type);
 
-   //pascal function (nonvoid types)
-   if (func_tag != TYVOID) {
-      if (func_tag == TYSUBRANGE) {
-         b_prepare_return(ty_query(ty_query_subrange(func_type, &low, &high)));
-      }
-      else {
-         b_prepare_return(func_tag);
-      }
-   }
+  //pops the function id from the global stack;
+  //fi_top--;
 
-   b_func_epilogue(global_func_name);
-   st_exit_block();
+  if (func_tag == TYSUBRANGE) {
+    b_prepare_return(ty_query(ty_query_subrange(type, &low, &high)));
+  }
+  else {
+    b_prepare_return(func_tag);
+  }
+
+  b_func_epilogue(st_get_id_str(id));
+  st_exit_block();
 }
 
-/************************************************************************
- * Function to install parameters, used in enter_function()             *
- * local function                                                       *
- *                                                                      *
- * Return: nothing                                                      *
- ************************************************************************/
+
+/* Function to install parameters, used in enter_func() 
+   Parameters are installed as PDECL */
 void install_params(PARAM_LIST list) {
-   long low,high;
+   long low, high;
 
    while (list != NULL) {
-      //create symtab record
-      ST_DR data_rec;
-      data_rec = stdr_alloc();
+      /* Creates empty data record */
+      ST_DR data_rec = stdr_alloc();
 
-      data_rec->tag = PDECL;	//parameters are installed as PDECL tag
+      data_rec->tag = PDECL;
       data_rec->u.decl.sc = list->sc;
       data_rec->u.decl.is_ref = list->is_ref;
       data_rec->u.decl.err = list->err;
@@ -566,7 +556,8 @@ void install_params(PARAM_LIST list) {
          data_rec->u.decl.type = list->type;
       }
 
-      if (list->is_ref == TRUE) { //var parameter
+      /* If referenced parameter */
+      if (list->is_ref == TRUE) {
          data_rec->u.decl.v.offset = b_get_formal_param_offset(TYPTR);
       }
       else {

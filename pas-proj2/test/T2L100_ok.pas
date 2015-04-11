@@ -19,7 +19,7 @@ Function abc : Integer; Forward;
 
 Procedure rst;
    begin
-      j := abc;
+      {j := abc;}
    end; { rst }
 
 Procedure xyz;
