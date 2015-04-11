@@ -1,0 +1,795 @@
+Comments for self-test -------- Fri Apr 10, 2015 at 9:57:33 EDT
+No illegal files found
+
+Testing compiliation with ppc3:
+  Attempting to build ppc3 ... ok
+
+
+LEVEL 80:
+
+Running ppc3 with input T2L80_ok.pas ... zero termination status
+  errors reported:
+vvvvv
+
+
+        Dump: Id  = Get_integer
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = function <check args = NO> <no params> returning signed long int
+		storage class = extern
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = B
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = signed char
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = C
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = unsigned char
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = D
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = double
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = I
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = signed long int
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = J
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = signed long int
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = K
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = signed long int
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = X
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = float
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = Y
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = float
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = Z
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = float
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = Single
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = float
+
+
+        Dump: Id  = Print_globals
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = procedure <check args = NO> <no params>
+		storage class = extern
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = Real
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = double
+
+
+        Dump: Id  = Char
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = unsigned char
+
+
+        Dump: Id  = Get_real
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = function <check args = NO> <no params> returning double
+		storage class = extern
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = Extended
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = long double
+
+
+        Dump: Id  = T2l80_ok
+
+
+        Dump: Id  = Byte
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = signed char
+
+
+        Dump: Id  = Integer
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = signed long int
+
+
+        Dump: Id  = Word
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = signed short int
+
+
+        Dump: Id  = Boolean
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = signed char
+^^^^^
+  T2L80_ok.s exists ... will assemble and run later
+Running ppc3 with input T2L80_err.pas ... zero termination status
+  T2L80_err.err exists
+  Comparing with solution file ... files differ:
+vvvvv
+3,215c3,19
+< 
+< 
+<         Dump: Id  = Get_integer
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = function <check args = NO> <no params> returning signed long int
+< 		storage class = extern
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = B
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = signed char
+< 		storage class = <no storage class>
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = C
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = unsigned char
+< 		storage class = <no storage class>
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = D
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = double
+< 		storage class = <no storage class>
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = I
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = signed long int
+< 		storage class = <no storage class>
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = J
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = signed long int
+< 		storage class = <no storage class>
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = K
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = signed long int
+< 		storage class = <no storage class>
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = Q
+< 
+< 
+<         Dump: Id  = W
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = function <check args = NO> <no params> returning double
+< 		storage class = extern
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = X
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = float
+< 		storage class = <no storage class>
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = Y
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = float
+< 		storage class = <no storage class>
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = Z
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = float
+< 		storage class = <no storage class>
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = Single
+< 
+<         Dump: Stack.
+<             Dump: block num = 0
+< 	TYPENAME
+< 		type = float
+< 
+< 
+<         Dump: Id  = Print_globals
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = procedure <check args = NO> <no params>
+< 		storage class = extern
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = Real
+< 
+<         Dump: Stack.
+<             Dump: block num = 0
+< 	TYPENAME
+< 		type = double
+< 
+< 
+<         Dump: Id  = Char
+< 
+<         Dump: Stack.
+<             Dump: block num = 0
+< 	TYPENAME
+< 		type = unsigned char
+< 
+< 
+<         Dump: Id  = Get_real
+< 
+<         Dump: Stack.
+<             Dump: block num = 1
+< 	GDECL
+< 		type = function <check args = NO> <no params> returning double
+< 		storage class = extern
+< 		reference parameter = FALSE
+< 		error = FALSE
+< 
+< 
+<         Dump: Id  = Extended
+< 
+<         Dump: Stack.
+<             Dump: block num = 0
+< 	TYPENAME
+< 		type = long double
+< 
+< 
+<         Dump: Id  = Byte
+< 
+<         Dump: Stack.
+<             Dump: block num = 0
+< 	TYPENAME
+< 		type = signed char
+< 
+< 
+<         Dump: Id  = Integer
+< 
+<         Dump: Stack.
+<             Dump: block num = 0
+< 	TYPENAME
+< 		type = signed long int
+< 
+< 
+<         Dump: Id  = Word
+< 
+<         Dump: Stack.
+<             Dump: block num = 0
+< 	TYPENAME
+< 		type = signed short int
+< 
+< 
+<         Dump: Id  = T2l80_err
+< 
+< 
+<         Dump: Id  = Boolean
+< 
+<         Dump: Stack.
+<             Dump: block num = 0
+< 	TYPENAME
+< 		type = signed char
+---
+> line 48: ERROR -- Undeclared identifier "Q" in expression
+> line 49: ERROR -- Expected procedure name, saw data
+> line 50: ERROR -- Procedure call expected
+> line 51: ERROR -- Assignment requires l-value on the left
+> line 52: ERROR -- Assignment requires l-value on the left
+> line 53: ERROR -- Cannot convert between nondata types
+> line 56: ERROR -- Undeclared identifier "Q" in expression
+> line 57: ERROR -- Illegal conversion
+> line 58: ERROR -- Illegal conversion
+> line 59: ERROR -- Illegal conversion
+> line 60: ERROR -- Illegal conversion
+> line 61: ERROR -- Illegal conversion
+> line 62: ERROR -- Illegal conversion
+> line 63: ERROR -- Illegal conversion
+> line 64: ERROR -- Illegal conversion
+> line 65: ERROR -- Nonnumerical type argument(s) to arithmetic operation
+> line 66: ERROR -- Incompatible type arguments to comparison operator
+^^^^^
+
+
+LEVEL 80extra:
+
+Running ppc3 with input T2L80extra_ok.pas ... zero termination status
+  errors reported:
+vvvvv
+
+
+        Dump: Id  = Get_integer
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = function <check args = NO> <no params> returning signed long int
+		storage class = extern
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = B
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = signed char
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = C
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = unsigned char
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = D
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = double
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = I
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = signed long int
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = J
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = signed long int
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = K
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = signed long int
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = X
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = float
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = Y
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = float
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = Z
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = float
+		storage class = <no storage class>
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = Single
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = float
+
+
+        Dump: Id  = Print_globals
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = procedure <check args = NO> <no params>
+		storage class = extern
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = T2l80extra_ok
+
+
+        Dump: Id  = Real
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = double
+
+
+        Dump: Id  = Char
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = unsigned char
+
+
+        Dump: Id  = Get_real
+
+        Dump: Stack.
+            Dump: block num = 1
+	GDECL
+		type = function <check args = NO> <no params> returning double
+		storage class = extern
+		reference parameter = FALSE
+		error = FALSE
+
+
+        Dump: Id  = Extended
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = long double
+
+
+        Dump: Id  = Byte
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = signed char
+
+
+        Dump: Id  = Integer
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = signed long int
+
+
+        Dump: Id  = Word
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = signed short int
+
+
+        Dump: Id  = Boolean
+
+        Dump: Stack.
+            Dump: block num = 0
+	TYPENAME
+		type = signed char
+^^^^^
+  T2L80extra_ok.s exists ... will assemble and run later
+  Checking constant folding ...
+vvvvv
+ #   65
+ #   66
+ #   67
+^^^^^
+
+
+LEVEL 100:
+
+Running ppc3 with input T2L100_ok.pas ... nonzero termination status
+  errors reported:
+vvvvv
+BUG: line 21: illegal tag in "my_print_typetag"
+^^^^^
+  T2L100_ok.s exists ... will assemble and run later
+  Checking dispose operator ...
+vvvvv
+
+^^^^^
+Running ppc3 with input T2L100_err.pas ... nonzero termination status
+  T2L100_err.err exists
+  Comparing with solution file ... files differ:
+vvvvv
+1c1,4
+< BUG: line 19: illegal tag in "my_print_typetag"
+---
+> line 25: ERROR -- Cannot set the return value of a procedure
+> line 26: ERROR -- Undeclared identifier "Abc" in expression
+> line 31: ERROR -- Undeclared identifier "H" in expression
+> line 32: ERROR -- Cannot convert between nondata types
+^^^^^
+
+
+LEVEL 110:
+
+Running ppc3 with input T2L110_ok.pas ... nonzero termination status
+  errors reported:
+vvvvv
+BUG: line 19: illegal tag in "my_print_typetag"
+^^^^^
+  T2L110_ok.s exists ... will assemble and run later
+Running ppc3 with input T2L110_err.pas ... nonzero termination status
+  T2L110_err.err exists
+  Comparing with solution file ... files differ:
+vvvvv
+1c1,7
+< BUG: line 19: illegal tag in "my_print_typetag"
+---
+> line 41: ERROR -- Undeclared identifier "Inner" in expression
+> line 80: ERROR -- Duplicate variable declaration: "C1"
+> line 104: ERROR -- Illegal conversion
+> line 104: ERROR -- Incompatible argument type
+> line 105: ERROR -- Wrong number of arguments to procedure or function call
+> line 106: ERROR -- Reference parameter argument is not an l-value
+> line 107: ERROR -- Reference parameter argument is not an l-value
+^^^^^
+
+
+LEVEL 120:
+
+Running ppc3 with input T2L120_ok.pas ... nonzero termination status
+  errors reported:
+vvvvv
+BUG: line 19: illegal tag in "my_print_typetag"
+^^^^^
+  T2L120_ok.s exists ... will assemble and run later
+Running ppc3 with input T2L120_err.pas ... nonzero termination status
+  T2L120_err.err exists
+  Comparing with solution file ... files differ:
+vvvvv
+1c1,12
+< BUG: line 19: illegal tag in "my_print_typetag"
+---
+> line 37: ERROR -- Undeclared identifier "Inner2" in expression
+> line 43: ERROR -- Undeclared identifier "Inner" in expression
+> line 54: ERROR -- Duplicate variable declaration: "C1"
+> line 70: ERROR -- Undeclared identifier "Inner2" in expression
+> line 71: ERROR -- Undeclared identifier "Innerinner" in expression
+> line 72: ERROR -- Wrong number of arguments to procedure or function call
+> line 72: ERROR -- Incompatible argument type
+> line 87: ERROR -- Illegal conversion
+> line 87: ERROR -- Incompatible argument type
+> line 88: ERROR -- Wrong number of arguments to procedure or function call
+> line 89: ERROR -- Reference parameter argument is not an l-value
+> line 90: ERROR -- Reference parameter argument is not an l-value
+^^^^^
+######################################################
+Compilation summary for self-test:
+  T2L100_err:  problem(s) found
+  T2L100_ok:  problem(s) found
+  T2L110_err:  problem(s) found
+  T2L110_ok:  problem(s) found
+  T2L120_err:  problem(s) found
+  T2L120_ok:  problem(s) found
+  T2L80_err:  problem(s) found
+  T2L80_ok:  problem(s) found
+  T2L80extra_ok:  problem(s) found
+  ppc3:  ok
+######################################################
+
+Testing execution with ppc3:
+
+
+LEVEL 80:
+
+Trying to assemble T2L80_ok.s with gcc and lib80 ...  failed
+Executable a.out does not exist
+
+
+LEVEL 80extra:
+
+Trying to assemble T2L80extra_ok.s with gcc and lib80 ...  failed
+Executable a.out does not exist
+
+
+LEVEL 100:
+
+Trying to assemble T2L100_ok.s with gcc and lib100 ...  failed
+Executable a.out does not exist
+
+
+LEVEL 110:
+
+Trying to assemble T2L110_ok.s with gcc and lib100 ...  failed
+Executable a.out does not exist
+######################################################
+Assembly/execution summary for self-test:
+  T2L100:  problem(s) found
+  T2L110:  problem(s) found
+  T2L80:  problem(s) found
+  T2L80extra:  problem(s) found
+  ppc3:  ok
+######################################################
+ 80% level: 
+100% level: 
+110% level: 

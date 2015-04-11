@@ -1,0 +1,16 @@
+(* test file for 80% level of project part 2, CSCE 531 *)
+
+(* there are no errors in this file! *)
+
+Program T2L80_ok;
+
+var
+   i,j,k : Integer;
+   x,y,z : Single;
+   c	 : Char;
+   d	 : Real;
+   b	 : Boolean;
+
+Procedure print_globals; External;
+
+
