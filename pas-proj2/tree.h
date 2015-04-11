@@ -48,6 +48,10 @@ INDEX_LIST create_list_from_type(TYPE type);
 void resolve_all_ptr();
 
 /* Definitions for part 2 */
+void enter_main_body();
+
+void exit_main_body();
+
 void build_func_decl(ST_ID id, TYPE type, DIRECTIVE dir );
 
 int enter_function(ST_ID id, TYPE type, char *global_func_name);

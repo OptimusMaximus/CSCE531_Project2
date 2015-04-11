@@ -332,6 +332,14 @@ void resolve_all_ptr()
 	}
 }
 
+void enter_main_body(){
+  b_func_prologue("main");
+}
+
+void exit_main_body(){
+  b_func_epilogue("main");
+}
+
 /* Void function to build function declaration and install into the symbol table */
 void build_func_decl(ST_ID id, TYPE type, DIRECTIVE dir){
    PARAM_LIST params;

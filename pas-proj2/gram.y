@@ -197,7 +197,7 @@ pascal_program:
   ;
 
 main_program_declaration:
-    program_heading semi any_global_declaration_part statement_part
+    program_heading semi any_global_declaration_part {enter_main_body();} statement_part {exit_main_body();}
   ;
 
 program_heading:
