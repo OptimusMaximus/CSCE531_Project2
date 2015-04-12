@@ -706,8 +706,8 @@ actual_parameter_list:
   | actual_parameter_list ',' actual_parameter
   ;
 
-actual_parameter:
-    expression
+actual_parameter://type is expr
+    expression  { $$ = $1; }
   ;
 
 /* ASSIGNMENT and procedure calls */
@@ -723,8 +723,8 @@ variable_or_function_access_maybe_assignment:
   ;
 
 rest_of_statement:
-    /* Empty */
-  | LEX_ASSIGN expression
+    /* Empty */  { $$ = NULL; }
+  | LEX_ASSIGN expression  { $$ = $2; } 
   ;
 
 standard_procedure_statement:
