@@ -110,7 +110,8 @@ void yyerror(const char *);
 %type <y_dir> directive directive_list
 %type <y_cint> variable_declaration_part variable_declaration_list
 %type <y_cint> variable_declaration simple_decl any_decl any_declaration_part function_declaration
-
+%type <y_expr> expression actual_parameter static_expression
+%type <y_expr> simple_expression term signed_primary primary factor
 
 /* Reserved words. */
 
