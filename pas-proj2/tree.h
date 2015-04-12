@@ -54,7 +54,7 @@ void exit_main_body();
 
 void install_func_head(ST_ID id, TYPE type, DIRECTIVE dir);
 
-int enter_func(ST_ID id, TYPE ret_type);
+int prepare_to_enter_func_body(ST_ID id, TYPE ret_type);
 
 void enter_func_body(ST_ID id, TYPE ret_type, int loc_var_offset);
 

@@ -384,12 +384,29 @@ void install_func_head(ST_ID id, TYPE ret_type, DIRECTIVE dir){
 
 }
 
-/* Two possiblities: 1-> If function name not already in symbol table, then install it as a fresh FDECL
-2-> Already in symbol table (st_lookup() returns a ST_DR).  Only allowable situation is previous installment
-was a GDECL of a function of the same type that is not external(has to forward declaration).  Look at the storage 
-class to see if external or not.  Anything else is semantic error(FDECL is duplicate definition, not a function, function
-but args or return type don't match) */
-int enter_func(ST_ID id, TYPE ret_type) {
+/* Function to install a data_rec of TYPE function if not already installed.  Next it enters the local scope of the 
+   function/procedure.  Next it installs parameters into symbol table with tag of PDECL. 
+   Next it initializes the offset and returns the offset calculated.  
+   Example:
+   Procedure rst;
+   begin
+      j := abc;
+   end; { rst }
+
+   Function abc : Integer;
+   begin
+      xyz;
+      abc := 18;
+      k := 20;
+      abc := 19
+   end; { abc }
+
+   Two possiblities: 1-> If function name not already in symbol table, then install it as a fresh FDECL
+   2-> Already in symbol table (st_lookup() returns a ST_DR).  Only allowable situation is previous installment
+   was a GDECL of a function of the same type that is not external(has to forward declaration).  Look at the storage 
+   class to see if external or not.  Anything else is semantic error(FDECL is duplicate definition, not a function, function
+   but args or return type don't match) */
+int prepare_to_enter_func_body(ST_ID id, TYPE ret_type) {
    ST_DR data_rec;
    PARAM_LIST params;
    BOOLEAN check_args;
@@ -456,14 +473,14 @@ int enter_func(ST_ID id, TYPE ret_type) {
    return init_offset;
 }
 
-/* Emits code to store formal
+/* Function that emits code to store formal
    parameters and allocates space for the return value and local vars */
 void enter_func_body(ST_ID id, TYPE ret_type, int loc_var_offset) {
    TYPE ret_type1;
    TYPE param_type;
    PARAM_LIST params;
    BOOLEAN check;
-   TYPETAG func_tag;
+   TYPETAG tag;
    TYPETAG param_tag;
 
    int block;
@@ -477,7 +494,8 @@ void enter_func_body(ST_ID id, TYPE ret_type, int loc_var_offset) {
    /* Query the function to get parameters */
    data_rec = st_lookup(id, &block);
    ret_type1 = ty_query_func(data_rec->u.decl.type, &params, &check);
-   func_tag = ty_query(ret_type);
+   /* Get the tag associated with the return type */
+   tag = ty_query(ret_type);
 
    // TODO: Still need local variables section for extra credit
 
@@ -501,7 +519,7 @@ void enter_func_body(ST_ID id, TYPE ret_type, int loc_var_offset) {
    }
 
    /* If function not a procedure */
-   if (func_tag != TYVOID) {
+   if (tag != TYVOID) {
       /* Allocate size for return value */
       b_alloc_return_value();
    }
@@ -510,24 +528,22 @@ void enter_func_body(ST_ID id, TYPE ret_type, int loc_var_offset) {
    b_alloc_local_vars(loc_var_offset);
 }
 
-/* Emits code to end a function body & exits scope of function */
-void exit_func_body(ST_ID id, TYPE type) {
-  TYPE func_type;
-  PARAM_LIST params;
-  BOOLEAN check;
-  TYPETAG func_tag;
-  long low,high;
+/* Function that emits code to end a function body & exits scope of function */
+void exit_func_body(ST_ID id, TYPE ret_type) {
+  TYPETAG tag;
+  long low, high;
 
-  func_tag = ty_query(type);
+  /* Get the tag associated with the return type */
+  tag = ty_query(ret_type);
 
   //pops the function id from the global stack;
   //fi_top--;
 
-  if (func_tag == TYSUBRANGE) {
-    b_prepare_return(ty_query(ty_query_subrange(type, &low, &high)));
+  if (tag == TYSUBRANGE) {
+    b_prepare_return(ty_query(ty_query_subrange(ret_type, &low, &high)));
   }
   else {
-    b_prepare_return(func_tag);
+    b_prepare_return(tag);
   }
 
   b_func_epilogue(st_get_id_str(id));

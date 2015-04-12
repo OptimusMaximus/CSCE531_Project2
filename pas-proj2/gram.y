@@ -540,7 +540,7 @@ variable_declaration:
 
 function_declaration:
     function_heading semi directive_list semi { install_func_head($1.id, $1.ret_type, $3); }
-  | function_heading semi { $<y_cint>$ = enter_func($1.id, $1.ret_type);} 
+  | function_heading semi { $<y_cint>$ = prepare_to_enter_func_body($1.id, $1.ret_type);} 
     any_declaration_part { enter_func_body($1.id, $1.ret_type, $<y_cint>3); } 
     statement_part semi { exit_func_body($1.id, $1.ret_type);}
   ;
