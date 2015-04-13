@@ -60,6 +60,12 @@
 
 #include "tree.h"
 #include "encode.h"
+#include "message.h"
+
+
+/* Function stack variables */
+ST_ID func_id_stack[BS_DEPTH];
+int fi_top = -1;
 
 /* Cause the `yydebug' variable to be defined.  */
 #define YYDEBUG 1
@@ -89,13 +95,19 @@ void yyerror(const char *);
     VAR_ID_LIST  y_varidlist;
     FUNC_HEADING y_funchead;
     DIRECTIVE 	 y_dir;
+    EXPR	 	 y_expr;
+    EXPR_LIST	 y_exprlist;
+    EXPR_NULLOP  y_nullop;
+    EXPR_UNOP    y_unop;
+    EXPR_BINOP   y_binop;
+    EXPR_ID      y_exprid;
 }
 
 /* updated token types and non-terminal types */
 %token <y_string> LEX_ID
 
-%type <y_string>  new_identifier_1
-%type <y_int> sign unsigned_number number constant
+%type <y_string>  new_identifier_1 string
+/*%type <y_int> sign unsigned_number number constant*/
 %type <y_type> typename type_denoter new_ordinal_type
 %type <y_type> subrange_type new_procedural_type ordinal_index_type
 %type <y_type> array_type set_type record_type new_structured_type
@@ -111,6 +123,20 @@ void yyerror(const char *);
 %type <y_cint> variable_declaration_part variable_declaration_list
 %type <y_cint> variable_declaration simple_decl any_decl any_declaration_part function_declaration
 
+%type <y_expr> unsigned_number number constant constant_literal
+%type <y_expr> expression actual_parameter static_expression
+%type <y_expr> simple_expression term signed_primary primary factor
+%type <y_expr> signed_factor variable_or_function_access predefined_literal
+%type <y_expr> standard_functions
+%type <y_expr> variable_or_function_access_no_standard_function
+%type <y_expr> variable_or_function_access_no_id rest_of_statement
+%type <y_expr> assignment_or_call_statement standard_procedure_statement
+%type <y_expr> variable_access_or_typename optional_par_actual_parameter
+%type <y_exprlist> actual_parameter_list optional_par_actual_parameter_list
+%type <y_nullop> rts_fun_optpar
+%type <y_unop> sign rts_fun_onepar rts_fun_parlist
+%type <y_binop> relational_operator multiplying_operator adding_operator
+%type <y_exprid> variable_or_function_access_maybe_assignment
 
 /* Reserved words. */
 
@@ -316,42 +342,42 @@ constant_definition:
     new_identifier '=' static_expression semi
   ;
 
-constant: /* number only now */
+constant: //Expr type
     identifier {}
   | sign identifier {}
   | number  { $$ = $1; }
-  | constant_literal {}
+  | constant_literal { $$ = $1; }
   ;
 
 number:
-    sign unsigned_number  { $$ = $1 * $2; }
+    sign unsigned_number  { $$ = make_un_expr($1, $2); }
   | unsigned_number  { $$ = $1; }
   ;
 
 unsigned_number:
-    LEX_INTCONST  { $$ = $1; }
-  | LEX_REALCONST  { $$ = (long) $1; /* cast as long */}
+    LEX_INTCONST  { $$ = make_intconst_expr($1, ty_build_basic(TYSIGNEDLONGINT)); }
+  | LEX_REALCONST  { $$ = make_realconst_expr((double) $1);} //$$ = (long) $1; /* cast as long */}
   ;
 
 sign:
-    '+'  { $$ = 1; }
-  | '-'  { $$ = -1; }
+    '+'  { $$ = PLUS_OP; }
+  | '-'  { $$ = NEG_OP; }
   ;
 
 constant_literal:
-    string
+    string { $$ = make_strconst_expr($1); }
   | predefined_literal
   ;
 
 predefined_literal:
-    LEX_NIL
-  | p_FALSE
-  | p_TRUE
+    LEX_NIL 	{ $$ = make_null_expr(NIL_OP); }
+  | p_FALSE		{ $$ = make_intconst_expr(0, ty_build_basic(TYSIGNEDCHAR)); }
+  | p_TRUE 		{ $$ = make_intconst_expr(1, ty_build_basic(TYSIGNEDCHAR)); }
   ;
 
 string:
-    LEX_STRCONST
-  | string LEX_STRCONST
+    LEX_STRCONST	{ $$ = $1; }
+  | string LEX_STRCONST { $$ = $2; }
   ;
 
 type_definition_part:
@@ -367,38 +393,38 @@ type_definition:
     new_identifier '=' type_denoter  { create_typename( $1, $3 ); }
 
 type_denoter:
-    typename    { $$ = $1; }
-  | new_ordinal_type  { $$ = $1; }
-  | new_pointer_type  { $$ = $1; }
-  | new_procedural_type { $$ = $1; }
-  | new_structured_type { $$ = $1; }
+    typename
+  | new_ordinal_type
+  | new_pointer_type
+  | new_procedural_type
+  | new_structured_type
   ;
 
 new_ordinal_type: /* default actions to pass TYPE through */
     enumerated_type {}
-  | subrange_type  { $$ = $1; }
+  | subrange_type
   ;
 
 enumerated_type:
-    '(' enum_list ')'
+    '(' enum_list ')' {}
   ;
 
 enum_list:
-    enumerator
-  | enum_list ',' enumerator
+    enumerator {}
+  | enum_list ',' enumerator {}
   ;
 
 enumerator:
-    new_identifier
+    new_identifier {}
   ;
 
 subrange_type: /* builds subrange TYPE */
-    constant LEX_RANGE constant  { $$ = check_subrange($1,$3); }
+    constant LEX_RANGE constant  { $$ = check_subrange($1, $3); }
 
   ;
 
 new_pointer_type: /* builds pointer TYPE */
-    pointer_char pointer_domain_type  { $$ = $2 ; }
+    pointer_char pointer_domain_type  { $$ = $2; }
   ;
 
 pointer_char:
@@ -407,8 +433,8 @@ pointer_char:
   ;
 
 pointer_domain_type:
-    new_identifier      {$$ = build_unresolved_pointer(ty_build_unresolved_ptr($1), NULL);}//{ $$ = ty_build_unresolved_ptr($1); }
-  | new_procedural_type  {$$ = build_unresolved_pointer(ty_build_ptr($1), $1);} //{ $$ = ty_build_ptr($1); };
+    new_identifier      {$$ = build_unresolved_pointer(ty_build_unresolved_ptr($1), NULL); } 
+  | new_procedural_type  {$$ = build_unresolved_pointer(ty_build_ptr($1), $1); }
   ;
 
 new_procedural_type: /* builds FUNC TYPE */
@@ -417,8 +443,8 @@ new_procedural_type: /* builds FUNC TYPE */
   ;
 
 optional_procedural_type_formal_parameter_list:
-    /* empty */  {$$ = NULL;}
-  | '(' procedural_type_formal_parameter_list ')'  {$$ = check_param($2);};
+    /* empty */  { $$ = NULL; }
+  | '(' procedural_type_formal_parameter_list ')'  { $$ = check_param($2); }
   ;
 
 procedural_type_formal_parameter_list:
@@ -430,14 +456,13 @@ procedural_type_formal_parameter:
     id_list  {$$=build_param_list($1,ty_build_basic(TYERROR),FALSE);}
   | id_list ':' typename  { $$ = build_param_list($1, $3, FALSE); }
   | LEX_VAR id_list ':' typename  { $$ = build_param_list($2, $4, TRUE); }
-  | LEX_VAR id_list  {$$=build_param_list($2,ty_build_basic(TYERROR),TRUE); /*treat as semantic errors*/};
-
+  | LEX_VAR id_list  {$$=build_param_list($2,ty_build_basic(TYERROR),TRUE); /*treat as semantic errors*/}
   ;
 
 new_structured_type: /* pass TYPE through */
-    array_type  { $$ = $1; }
-  | set_type  { $$ = $1; }
-  | record_type { $$ = $1; }
+    array_type
+  | set_type
+  | record_type
   ;
 
 /* Array */
@@ -556,8 +581,8 @@ directive_list:
   ;
 
 directive:
-    LEX_FORWARD  { $$ = DIR_FORWARD;}
-  | LEX_EXTERNAL { $$ = DIR_EXTERNAL;}
+    LEX_FORWARD  { $$ = DIR_FORWARD; }
+  | LEX_EXTERNAL { $$ = DIR_EXTERNAL; }
   ;
 
 functiontype:
@@ -684,8 +709,8 @@ for_direction:
 
 simple_statement:
     empty_statement					{}
-  | assignment_or_call_statement	
-  | standard_procedure_statement
+  | assignment_or_call_statement	{ encode_expr($1); }
+  | standard_procedure_statement    { encode_expr($1); }
   | statement_extensions			{/*Won't deal with these*/}
   ;
 
@@ -696,13 +721,13 @@ empty_statement:
 /* function calls */
 
 optional_par_actual_parameter_list:
-    /* empty */
-  | '(' actual_parameter_list ')'
+    /* empty */ { $$ = NULL; }
+  | '(' actual_parameter_list ')' { $$ = expr_list_reverse($2); }
   ;
 
 actual_parameter_list:
-    actual_parameter
-  | actual_parameter_list ',' actual_parameter
+    actual_parameter { $$ = expr_prepend($1, NULL); }
+  | actual_parameter_list ',' actual_parameter { $$ = expr_prepend($3, $1); }
   ;
 
 actual_parameter:
@@ -712,30 +737,30 @@ actual_parameter:
 /* ASSIGNMENT and procedure calls */
 
 assignment_or_call_statement:
-    variable_or_function_access_maybe_assignment rest_of_statement
+    variable_or_function_access_maybe_assignment rest_of_statement { $$ = check_assign_or_proc_call($1.expr, $1.id, $2); }
   ;
 
 variable_or_function_access_maybe_assignment:
-    identifier
-  | address_operator variable_or_function_access
-  | variable_or_function_access_no_id
+    identifier { $$.expr = make_id_expr($1); $$.id = $1; }
+  | address_operator variable_or_function_access {}
+  | variable_or_function_access_no_id { $$.expr = $1; $$.id = NULL; }
   ;
 
 rest_of_statement:
-    /* Empty */
-  | LEX_ASSIGN expression
+    /* Empty */ { $$ = NULL; }
+  | LEX_ASSIGN expression { $$ = $2; }
   ;
 
 standard_procedure_statement:
-    rts_proc_onepar '(' actual_parameter ')'
-  | rts_proc_parlist '(' actual_parameter_list ')'
-  | p_WRITE optional_par_write_parameter_list
-  | p_WRITELN optional_par_write_parameter_list
-  | p_READ optional_par_actual_parameter_list
-  | p_READLN optional_par_actual_parameter_list
-  | p_PAGE optional_par_actual_parameter_list
-  | p_DISPOSE '(' actual_parameter ')'
-  | p_DISPOSE '(' actual_parameter ',' actual_parameter_list ')'
+    rts_proc_onepar '(' actual_parameter ')' {}
+  | rts_proc_parlist '(' actual_parameter_list ')' {}
+  | p_WRITE optional_par_write_parameter_list {}
+  | p_WRITELN optional_par_write_parameter_list {}
+  | p_READ optional_par_actual_parameter_list {}
+  | p_READLN optional_par_actual_parameter_list {}
+  | p_PAGE optional_par_actual_parameter_list {}
+  | p_DISPOSE '(' actual_parameter ')' { $$ = make_un_expr(DISPOSE_OP, $3); }
+  | p_DISPOSE '(' actual_parameter ',' actual_parameter_list ')' {}
   ;
 
 optional_par_write_parameter_list:
@@ -808,8 +833,8 @@ continue_statement:
   ;
 
 variable_access_or_typename:
-    variable_or_function_access_no_id
-  | LEX_ID
+    variable_or_function_access_no_id {}
+  | LEX_ID { $$ = make_id_expr(st_enter_id($1)); }
   ;
 
 index_expression_list:
@@ -818,64 +843,66 @@ index_expression_list:
   ;
 
 index_expression_item:
-    expression
-  | expression LEX_RANGE expression
+    expression {}
+  | expression LEX_RANGE expression {}
   ;
 
 /* expressions */
 
 static_expression:
-    expression
+    expression {}
   ;
 
 boolean_expression:
-    expression
+    expression {}
   ;
 
 expression:
-    expression relational_operator simple_expression
-  | expression LEX_IN simple_expression
-  | simple_expression
+    expression relational_operator simple_expression { $$ = make_bin_expr($2, $1, $3); }
+  | expression LEX_IN simple_expression {}
+  | simple_expression 
   ;
 
 simple_expression:
     term
-  | simple_expression adding_operator term
-  | simple_expression LEX_SYMDIFF term
-  | simple_expression LEX_OR term
-  | simple_expression LEX_XOR term
+  | simple_expression adding_operator term { $$ = make_bin_expr($2, $1, $3); }
+  | simple_expression LEX_SYMDIFF term {}
+  | simple_expression LEX_OR term {}
+  | simple_expression LEX_XOR term {}
   ;
 
 term:
     signed_primary
-  | term multiplying_operator signed_primary
-  | term LEX_AND signed_primary
+  | term multiplying_operator signed_primary { $$ = make_bin_expr($2, $1, $3); }
+  | term LEX_AND signed_primary {}
   ;
 
 signed_primary:
-    primary
-  | sign signed_primary
+    primary 
+  | sign signed_primary { $$ = make_un_expr($1, $2); }
   ;
 
 primary:
     factor
-  | primary LEX_POW factor
-  | primary LEX_POWER factor
-  | primary LEX_IS typename
+  | primary LEX_POW factor {}
+  | primary LEX_POWER factor {}
+  | primary LEX_IS typename {}
   ;
 
 signed_factor:
     factor
-  | sign signed_factor
+  | sign signed_factor { $$ = make_un_expr($1, $2); }
   ;
 
 factor:
-    variable_or_function_access
+    variable_or_function_access  { if (ty_query($1->type) == TYFUNC) {
+                                      $$ = make_fcall_expr($1, NULL);
+                                   } else { $$ = $1; } }
   | constant_literal
   | unsigned_number
-  | set_constructor
-  | LEX_NOT signed_factor
-  | address_operator factor
+  | set_constructor {}
+  | LEX_NOT signed_factor {}
+  | address_operator factor {}
   ;
 
 address_operator:
@@ -888,7 +915,7 @@ variable_or_function_access:
   ;
 
 variable_or_function_access_no_standard_function:
-    identifier
+    identifier { $$ = make_id_expr($1); }
   | variable_or_function_access_no_id
   ;
 
@@ -896,11 +923,11 @@ variable_or_function_access_no_id:
     p_OUTPUT	{/*Not using */}
   | p_INPUT		{/*Not using*/}
   | variable_or_function_access '.' new_identifier {/*Not using*/}
-  | '(' expression ')'	{}//$$ = $2;}
+  | '(' expression ')'	{ $$ = $2; }
   | variable_or_function_access pointer_char
   | variable_or_function_access '[' index_expression_list ']'	{/*Project 3*/}
-  | variable_or_function_access_no_standard_function '(' actual_parameter_list ')'
-  | p_NEW '(' variable_access_or_typename ')'
+  | variable_or_function_access_no_standard_function '(' actual_parameter_list ')' {}
+  | p_NEW '(' variable_access_or_typename ')' { $$ = make_un_expr(NEW_OP, $3); }
   ;
 
 set_constructor:
@@ -919,71 +946,71 @@ member_designator:
   ;
 
 standard_functions:
-    rts_fun_onepar '(' actual_parameter ')'
-  | rts_fun_optpar optional_par_actual_parameter
-  | rts_fun_parlist '(' actual_parameter_list ')'
+    rts_fun_onepar '(' actual_parameter ')' { $$ = make_un_expr($1, $3); }
+  | rts_fun_optpar optional_par_actual_parameter { $$ = make_null_expr($1); }
+  | rts_fun_parlist '(' actual_parameter_list ')' { $$ = make_un_expr($1, $3->expr); }
   ;
 
 optional_par_actual_parameter:
-    /* empty */
-  | '(' actual_parameter ')'
+    /* empty */ {}
+  | '(' actual_parameter ')' { $$ = $2; }
   ;
 
 rts_fun_optpar:
-    p_EOF
-  | p_EOLN
+    p_EOF {}
+  | p_EOLN {}
   ;
 
 rts_fun_onepar:
-    p_ABS
-  | p_SQR
-  | p_SIN
-  | p_COS
-  | p_EXP
-  | p_LN
-  | p_SQRT
-  | p_ARCTAN
-  | p_ARG
-  | p_TRUNC
-  | p_ROUND
-  | p_CARD
-  | p_ORD
-  | p_CHR
-  | p_ODD
-  | p_EMPTY
-  | p_POSITION
-  | p_LASTPOSITION
-  | p_LENGTH
-  | p_TRIM
-  | p_BINDING
-  | p_DATE
-  | p_TIME
+    p_ABS {}
+  | p_SQR {}
+  | p_SIN {}
+  | p_COS {}
+  | p_EXP {}
+  | p_LN {}
+  | p_SQRT {}
+  | p_ARCTAN {}
+  | p_ARG {}
+  | p_TRUNC {}
+  | p_ROUND {}
+  | p_CARD {}
+  | p_ORD { $$ = ORD_OP; }
+  | p_CHR { $$ = CHR_OP; }
+  | p_ODD {}
+  | p_EMPTY {}
+  | p_POSITION {}
+  | p_LASTPOSITION {}
+  | p_LENGTH {}
+  | p_TRIM {}
+  | p_BINDING {}
+  | p_DATE {}
+  | p_TIME {}
   ;
 
 rts_fun_parlist:
-    p_SUCC    /* One or two args */
-  | p_PRED    /* One or two args */
+    p_SUCC    { $$ = SUCC_OP; } /* One or two args */
+  | p_PRED    { $$ = PRED_OP; } /* One or two args */
   ;
 
 relational_operator:
-    LEX_NE
-  | LEX_LE
-  | LEX_GE
-  | '='
-  | '<'
-  | '>'
+    LEX_NE { $$ = NE_OP; }
+  | LEX_LE { $$ = LE_OP; }
+  | LEX_GE { $$ = GE_OP; }
+  | '=' { $$ = EQ_OP; }
+  | '<' { $$ = LESS_OP; }
+  | '>' { $$ = GREATER_OP; }
   ;
 
 multiplying_operator:
-    LEX_DIV
-  | LEX_MOD
-  | '/'
-  | '*'
+    LEX_DIV { $$ = DIV_OP; }
+  | LEX_MOD { $$ = MOD_OP; }
+  | '/' { $$ = REALDIV_OP; }
+  | '*' { $$ = MUL_OP; }
   ;
 
 adding_operator:
-    '-'
-  | '+'
+    '-' { $$ = SUB_OP; }
+  | '+' { $$ = ADD_OP; }
   ;
 
 semi:
