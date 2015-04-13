@@ -882,26 +882,27 @@ signed_primary:
   ;
 
 primary:
-    factor
-  | primary LEX_POW factor {}
-  | primary LEX_POWER factor {}
-  | primary LEX_IS typename {}
+    factor  { $$ = $1; }
+  | primary LEX_POW factor  {}
+  | primary LEX_POWER factor  {}
+  | primary LEX_IS typename  {}
   ;
 
 signed_factor:
-    factor
+    factor { $$ = $1; }
   | sign signed_factor { $$ = make_un_expr($1, $2); }
   ;
 
 factor:
     variable_or_function_access  { if (ty_query($1->type) == TYFUNC) {
                                       $$ = make_fcall_expr($1, NULL);
-                                   } else { $$ = $1; } }
-  | constant_literal
-  | unsigned_number
-  | set_constructor {}
-  | LEX_NOT signed_factor {}
-  | address_operator factor {}
+                                   } else { $$ = $1; }
+                                 }
+  | constant_literal  { $$ = $1; }
+  | unsigned_number  { $$ = $1; }
+  | set_constructor  {}
+  | LEX_NOT signed_factor  { $$ = make_un_expr(NOT_OP, $2); }
+  | address_operator factor  { $$ = make_un_expr(ADDRESS_OP, $2); }
   ;
 
 address_operator:
