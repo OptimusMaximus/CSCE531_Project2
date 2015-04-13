@@ -934,7 +934,7 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
    TYPE base_type,next;
    long low, high; 
 
-   error("op is %d", op);
+   //error("op is %d", op);
    if (op == DEREF_OP) {
       return ret;
    }
