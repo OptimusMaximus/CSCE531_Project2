@@ -24,7 +24,7 @@ int main()
 #endif
 	status = yyparse();
 #if 1//0
-	st_dump();
+	//st_dump();
 #endif
 	return status;
 }
