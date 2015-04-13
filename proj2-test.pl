@@ -10,7 +10,7 @@
 # This script must be run under the bash shell!
 
 # edit as needed
-$project_directory = "$ENV{HOME}/531/project2/CSCE531_Project2/pas-proj2";
+$project_directory = "$ENV{HOME}/531/CSCE531_Project2/pas-proj2";
 $semester = 'sp15';
 
 # This varies by system
