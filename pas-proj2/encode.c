@@ -189,27 +189,27 @@ void encode_expr(EXPR expr)
 {    
     if (expr == NULL)
         bug("Expression is null ");
-
+	error("expr->tag = %d ", expr->tag);
     switch (expr->tag) {
-        case LFUN:
-        case ERROR: break;
-        case INTCONST:  
+        case LFUN: //expr->tag = 4
+        case ERROR: break; //expr->tag = 10
+        case INTCONST:  //expr->tag = 0
             b_push_const_int(expr->u.intval);
             if(ty_query(expr->type) == TYUNSIGNEDCHAR)
                 b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
             if(ty_query(expr->type) == TYSIGNEDCHAR)
                 b_convert(TYSIGNEDLONGINT, TYSIGNEDCHAR);
             break;
-        case REALCONST:      
+        case REALCONST:   //expr->tag = 1   
             b_push_const_double(expr->u.realval);
             break;
-        case STRCONST:
+        case STRCONST: //expr->tag = 2
             b_push_const_string(expr->u.strval);
             break;
-        case GID:
+        case GID: //expr->tag = 3
             b_push_ext_addr(st_get_id_str(expr->u.gid));
             break;
-        case LVAR:      
+        case LVAR:     //expr->tag = 4 
             b_push_loc_addr(0);
             int i = 0;
             for (i = 0; i < expr->u.lvar.link_count; i++) {
@@ -220,16 +220,16 @@ void encode_expr(EXPR expr)
             if (expr->u.lvar.is_ref == TRUE)
                 b_deref(TYPTR);
             break;
-        case NULLOP:       
+        case NULLOP:   //expr->tag = 6    
             b_push_const_int(0);
             break;   
-        case UNOP:         
+        case UNOP:  //expr->tag = 7       
             encode_unop(expr->u.unop.op, expr);
             break;
-        case BINOP:
+        case BINOP://expr->tag = 8
             encode_binop(expr->u.binop.op, expr);
             break;
-        case FCALL:        
+        case FCALL:  //expr->tag = 9      
             encode_fcall(expr->u.fcall.function, expr->u.fcall.args);
             break;
     }
@@ -243,12 +243,15 @@ void encode_unop(EXPR_UNOP op, EXPR expr)
     TYPE type, base_type;
     BOOLEAN converted_to_int;
 
+	error("encode_unop op = %d ", op);
+
     encode_expr(expr->u.unop.operand);
 
     converted_to_int = FALSE;
     tag = ty_query(expr->u.unop.operand->type);
     rval_tag = ty_query(expr->type);
-
+	
+	
     switch(op) {
         case INDIR_OP:
         case PLUS_OP: break;
@@ -323,11 +326,13 @@ void encode_binop(EXPR_BINOP out, EXPR expr)
 {
   TYPETAG type_tag;
   TYPETAG left_type_tag, right_type_tag;
+  error("encode_binop out = %d", out);
   encode_expr(expr->u.binop.left);
   encode_expr(expr->u.binop.right);
   type_tag = ty_query(expr->type);
   left_type_tag = ty_query(expr->u.binop.left->type);
   right_type_tag = ty_query(expr->u.binop.right->type);
+  
   switch (out) {
     case SYMDIFF_OP:
     case OR_OP:

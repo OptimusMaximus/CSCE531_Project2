@@ -934,7 +934,10 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
    TYPE base_type,next;
    long low, high; 
 
-   //error("op is %d", op);
+   error("op is %d", op);
+   ty_print_type(sub->type);
+   fprintf(stderr, "\n");
+
    if (op == DEREF_OP) {
       return ret;
    }
@@ -1168,6 +1171,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
       convertedNode->type = ty_build_basic(TYDOUBLE);
       ret->u.binop.right = convertedNode;
    }
+	
 
    left_type = ty_query(ret->u.binop.left->type);
    right_type = ty_query(ret->u.binop.right->type);
