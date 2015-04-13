@@ -730,8 +730,8 @@ actual_parameter_list:
   | actual_parameter_list ',' actual_parameter { $$ = expr_prepend($3, $1); }
   ;
 
-actual_parameter:
-    expression
+actual_parameter: //type is expr
+    expression  { $$ = $1; }
   ;
 
 /* ASSIGNMENT and procedure calls */
@@ -857,29 +857,28 @@ boolean_expression:
     expression {}
   ;
 
-expression:
-    expression relational_operator simple_expression { $$ = make_bin_expr($2, $1, $3); }
-  | expression LEX_IN simple_expression {}
-  | simple_expression 
+expression: //type is expression
+    expression relational_operator simple_expression  { $$ = make_bin_expr($2, $1, $3); }
+  | expression LEX_IN simple_expression  {}
+  | simple_expression  { $$ = $1; }
   ;
 
 simple_expression:
-    term
-  | simple_expression adding_operator term { $$ = make_bin_expr($2, $1, $3); }
-  | simple_expression LEX_SYMDIFF term {}
-  | simple_expression LEX_OR term {}
-  | simple_expression LEX_XOR term {}
-  ;
+    term  { $$ = $1; }
+  | simple_expression adding_operator term  { $$ = make_bin_expr($2, $1, $3); }
+  | simple_expression LEX_SYMDIFF term  { $$ = make_bin_expr(SYMDIFF_OP, $1, $3); }
+  | simple_expression LEX_OR term  { $$ = make_bin_expr(OR_OP, $1, $3); }
+  | simple_expression LEX_XOR term  { $$ = make_bin_expr(XOR_OP, $1, $3); }
 
 term:
-    signed_primary
-  | term multiplying_operator signed_primary { $$ = make_bin_expr($2, $1, $3); }
-  | term LEX_AND signed_primary {}
+    signed_primary  { $$ = $1; }
+  | term multiplying_operator signed_primary  { $$ = make_bin_expr($2, $1, $3); }
+  | term LEX_AND signed_primary  { $$ = make_bin_expr(AND_OP, $1, $3); }
   ;
 
 signed_primary:
-    primary 
-  | sign signed_primary { $$ = make_un_expr($1, $2); }
+    primary  { $$ = $1; }
+  | sign signed_primary  { $$ = make_un_expr($1, $2); }
   ;
 
 primary:
