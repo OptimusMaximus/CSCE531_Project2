@@ -452,8 +452,8 @@ int prepare_to_enter_func_body(ST_ID id, TYPE ret_type) {
       }
    }
 
-    fi_top++; // increment stack
-    func_id_stack[fi_top] = id; //set value
+   fi_top++; // increment stack
+   func_id_stack[fi_top] = id; //set value
 
    /* Enter local scope of the function */
    st_enter_block();
