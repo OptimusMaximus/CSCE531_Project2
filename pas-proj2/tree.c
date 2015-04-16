@@ -1214,16 +1214,19 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
               return make_error_expr();
             }
           }
+          error("In less than, right = %d, left = %d", right_type, left_type);
           /*If the left or right arguments are chars, promote*/
           if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
             EXPR convertedNode = make_un_expr(CONVERT_OP, right);
             convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
             ret->u.binop.right = convertedNode;
+            error("converted right");
          }
-         else if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
+         if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
             EXPR convertedNode = make_un_expr(CONVERT_OP, left);
             convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
             ret->u.binop.left = convertedNode;
+            error("converted left");
          } 
          ret->type = ty_build_basic(TYSIGNEDLONGINT);
           break; 
@@ -1245,7 +1248,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
             convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
             ret->u.binop.right = convertedNode;
          }
-         else if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
+         if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
             EXPR convertedNode = make_un_expr(CONVERT_OP, left);
             convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
             ret->u.binop.left = convertedNode;
