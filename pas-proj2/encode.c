@@ -190,6 +190,9 @@ void encode_expr(EXPR expr)
     if (expr == NULL)
         bug("Expression is null ");
 	error("expr->tag = %d ", expr->tag);
+	
+/*	char *temp = st_get_id_str(expr->u.gid);
+	printf("var %s", temp);*/
     switch (expr->tag) {
         case LFUN: //expr->tag = 4
         case ERROR: break; //expr->tag = 10

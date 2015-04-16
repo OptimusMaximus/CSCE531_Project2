@@ -934,7 +934,7 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
    TYPE base_type,next;
    long low, high; 
 
-   error("op is %d", op);
+   error("unop is %d", op);
    ty_print_type(sub->type);
    fprintf(stderr, "\n");
 
@@ -974,6 +974,7 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
    //switch statement on op for error checking
    switch (op) {
       case CONVERT_OP:
+		error("Im in convert 10 stars****************");
          break;
       case DEREF_OP:
          break;
@@ -1175,7 +1176,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
 
    left_type = ty_query(ret->u.binop.left->type);
    right_type = ty_query(ret->u.binop.right->type);
-
+	error("In make bin expr!!!!!!!!!!!!!!!!!!!, op is %d", op);
    switch(op) {
       case ADD_OP:
       case SUB_OP:
@@ -1198,7 +1199,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
          ret->type = ty_build_basic(TYSIGNEDLONGINT);
          break;
       case LESS_OP:
-          //error("in less than op");
+          error("in less than op");
           /*Type check*/
           if((right_type != TYSIGNEDLONGINT && right_type != TYFLOAT && right_type != TYDOUBLE && right_type != TYUNSIGNEDCHAR && right_type != TYSIGNEDCHAR) && (left_type != TYSIGNEDLONGINT && left_type != TYFLOAT && left_type != TYDOUBLE && left_type != TYUNSIGNEDCHAR && left_type != TYSIGNEDCHAR))
           {
@@ -1238,6 +1239,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
          //type check
          //convert
          //error("in <= op");
+		 error("in less than  = op");
          if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
             EXPR convertedNode = make_un_expr(CONVERT_OP, right);
             convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
