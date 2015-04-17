@@ -8,10 +8,10 @@ Program T2L80extra_ok;
 
 var
    i,j,k : Integer;
-  (* x,y,z : Single;
+   x,y,z : Single;
    c	 : Char;
    d	 : Real;
-   b	 : Boolean;*)
+   b	 : Boolean;
 (*
 Procedure print_globals; External;
 
@@ -62,10 +62,15 @@ begin
 *)
    { constant folding }
    i := 99 + 17;
-   (*x := -19.99;
+	i := 9 - 4;
+	i := 9 mod 4;
+	i := 9 div 4;
+   (*x := -19.99;*)
    d := 99 * 17.76;
+	d := 99 / 17.76;
+	d := 17.76 / 99;
    c := succ(chr(ord(chr(65))+10));
 
-   print_globals*)
+   (*print_globals*)
 
 end.

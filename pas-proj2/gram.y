@@ -709,7 +709,7 @@ for_direction:
 
 simple_statement:
     empty_statement					{}
-  | assignment_or_call_statement	{ encode_expr($1);   printf("\n\n after assignment_or_call_statement	\n\n");}
+  | assignment_or_call_statement	{ encode_expr($1); }
   | standard_procedure_statement    { encode_expr($1); }
   | statement_extensions			{/*Won't deal with these*/}
   ;
@@ -738,7 +738,6 @@ actual_parameter: //type is expr
 
 assignment_or_call_statement:
     variable_or_function_access_maybe_assignment rest_of_statement { $$ = check_assign_or_proc_call($1.expr, $1.id, $2);}
-// printf("\n\nafter check_assign_or_proc_call\n\n");}
   ;
 
 variable_or_function_access_maybe_assignment:

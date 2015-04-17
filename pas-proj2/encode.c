@@ -329,32 +329,99 @@ void encode_binop(EXPR_BINOP out, EXPR expr)
 {
   TYPETAG type_tag;
   TYPETAG left_type_tag, right_type_tag;
-  error("encode_binop out = %d", out);
 
+  /*typedef enum {
+    INTCONST, REALCONST, STRCONST, GID, LVAR, LFUN, NULLOP, UNOP, BINOP,
+    FCALL, ERROR
+	} EXPR_TAG;*/
+  printf("encode_binop left_tag = %d right_tag %d \n\n", expr->u.binop.left->tag, expr->u.binop.right->tag);
+
+//Constant folding done here
+//add SUB, MUL, succ, chr, ord, chr, DIV, MOD, 
 if(expr->u.binop.left->tag==INTCONST && expr->u.binop.right->tag==INTCONST)
 {
- 	printf("\n\n expr->u.binop.left->tag==INTCONST && expr->u.binop.right->tag==INTCONST\n\n");
-			EXPR ret;
+	EXPR ret;
 	switch (out) 
 	{
-
-//add SUB, MUL, succ, chr, ord, chr, DIV, MOD, 
-		case ADD_OP: 
-
-			printf("\n\n	ADD_OP	\n\n");
-			printf("\n\n	left is %ld	\n\n", expr->u.binop.left->u.intval);
-			printf("\n\n	right is %ld	\n\n", expr->u.binop.right->u.intval);
+		case ADD_OP:			
 			ret = make_intconst_expr((expr->u.binop.left->u.intval + expr->u.binop.right->u.intval), ty_build_basic(TYSIGNEDLONGINT));
-			/*
-   			ret = (EXPR)malloc(sizeof(EXPR_NODE));
-		    //assert(ret != NULL);
-		    ret->tag = INTCONST;
-		    ret->type = ty_build_basic(TYSIGNEDLONGINT);
-		    ret->u.intval = expr->u.binop.left->u.intval + expr->u.binop.right->u.intval;
-			*/
-		 	printf("\n\n ret->u.intval is %ld\n\n", ret->u.intval);
 			encode_expr(ret);
-		break;
+			break;
+		case SUB_OP:
+			ret = make_intconst_expr((expr->u.binop.left->u.intval - expr->u.binop.right->u.intval), ty_build_basic(TYSIGNEDLONGINT));
+			encode_expr(ret);
+			break;
+		case MUL_OP: 
+			ret = make_intconst_expr((expr->u.binop.left->u.intval * expr->u.binop.right->u.intval), ty_build_basic(TYSIGNEDLONGINT));
+			encode_expr(ret);			
+			break;
+    	case DIV_OP: 
+			printf("In div_op");
+			ret = make_intconst_expr((expr->u.binop.left->u.intval / expr->u.binop.right->u.intval), ty_build_basic(TYSIGNEDLONGINT));
+			encode_expr(ret);			
+			break;
+    	case MOD_OP: 
+			ret = make_intconst_expr((expr->u.binop.left->u.intval % expr->u.binop.right->u.intval), ty_build_basic(TYSIGNEDLONGINT));
+			encode_expr(ret);
+ 			break;    
+    	case REALDIV_OP: 
+			//This is only for reals not ints!!!
+			break;
+
+	}
+}
+else if (expr->u.binop.left->tag==UNOP && expr->u.binop.right->tag==REALCONST){
+	EXPR ret;
+	switch(out){
+		case ADD_OP: 
+			ret = make_realconst_expr(((double)(expr->u.binop.left->u.unop.operand->u.intval) + expr->u.binop.right->u.realval));
+			encode_expr(ret);
+			break;
+		case SUB_OP:
+			ret = make_realconst_expr(((double)(expr->u.binop.left->u.unop.operand->u.intval) - expr->u.binop.right->u.realval));
+			encode_expr(ret);
+			break;
+		case MUL_OP: 
+			ret = make_realconst_expr(((double)(expr->u.binop.left->u.unop.operand->u.intval) * expr->u.binop.right->u.realval));
+			encode_expr(ret);			
+			break;
+    	case DIV_OP: 
+			//This is for ints
+			break;
+    	case MOD_OP: 
+			//This is for ints
+ 			break;    
+    	case REALDIV_OP: 
+			ret = make_realconst_expr(((double)(expr->u.binop.left->u.unop.operand->u.intval) / expr->u.binop.right->u.realval));
+			encode_expr(ret);
+			break;
+	}
+}
+else if(expr->u.binop.left->tag==REALCONST && expr->u.binop.right->tag==UNOP){
+	EXPR ret;
+	switch(out){
+		case ADD_OP: 
+			ret = make_realconst_expr(expr->u.binop.left->u.realval + (double)(expr->u.binop.right->u.unop.operand->u.intval));
+			encode_expr(ret);
+			break;
+		case SUB_OP:
+			ret = make_realconst_expr(expr->u.binop.left->u.realval - (double)(expr->u.binop.right->u.unop.operand->u.intval));
+			encode_expr(ret);
+			break;
+		case MUL_OP: 
+			ret = make_realconst_expr(expr->u.binop.left->u.realval * (double)(expr->u.binop.right->u.unop.operand->u.intval));
+			encode_expr(ret);			
+			break;
+    	case DIV_OP: 
+			//This is for ints
+			break;
+    	case MOD_OP: 
+			//This is for ints
+ 			break;    
+    	case REALDIV_OP: 
+			ret = make_realconst_expr(expr->u.binop.left->u.realval / (double)(expr->u.binop.right->u.unop.operand->u.intval));
+			encode_expr(ret);
+			break;
 	}
 }
 else
