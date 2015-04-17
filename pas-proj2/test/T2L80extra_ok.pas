@@ -8,19 +8,19 @@ Program T2L80extra_ok;
 
 var
    i,j,k : Integer;
-   x,y,z : Single;
+  (* x,y,z : Single;
    c	 : Char;
    d	 : Real;
-   b	 : Boolean;
-
+   b	 : Boolean;*)
+(*
 Procedure print_globals; External;
 
 Function get_real : Real; External;
 
 Function get_integer : Integer; External;
-
+*)
 begin
-
+(*
    i := 5;		
    j := i;
    k := 14;
@@ -59,13 +59,13 @@ begin
    d := get_real + 9.9; 	{ get_real also linked in }
 
    print_globals;
-
+*)
    { constant folding }
    i := 99 + 17;
-   x := -19.99;
+   (*x := -19.99;
    d := 99 * 17.76;
    c := succ(chr(ord(chr(65))+10));
 
-   print_globals
+   print_globals*)
 
 end.

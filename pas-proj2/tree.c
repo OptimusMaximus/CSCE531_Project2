@@ -17,6 +17,51 @@
 #include "types.h"
 #include <stdio.h>
 #include <assert.h>
+static const unsigned long MAX_UCHAR = (unsigned long)(unsigned char)(-1);
+static int get_single_char(const char * str)
+{
+    if (*str == '\0') return(-1);
+    if (*str != '\\') {
+  if (*(str+1) == '\0') return((int)(unsigned char)(*str));
+  return(-1);
+    }
+
+    /* str starts with an escape char ("\"); check for legal escape seqs */
+    /* single quotes need not be escaped in C strings. */
+    switch (*++str) {
+    case 'n': return '\n';
+    case 't': return '\t';
+    case 'b': return '\b';
+    case 'r': return '\r';
+    case 'f': return '\f';
+    case 'v': return '\v';
+    case '\\': return '\\';
+    case '"': return '"';
+    case 'a': return '\a';
+    case '?': return '?';
+    }
+
+    /* str isn't a character escape.  Check for octal or hex escape codes */
+    if (*str == 'x') {  /* if hexadecimal */
+  long num;
+  char *end;
+  num = strtol(++str, &end, 16);
+  if (*end != '\0' || (unsigned long)num > MAX_UCHAR)
+      return(-1);
+  return((int)num);
+    }
+
+    if (*str >= '0' && *str < '8') {  /* if octal */
+  long num;
+  char *end;
+  num = strtol(str, &end, 8);
+  if (*end != '\0' || end-str > 3 || (unsigned long)num > MAX_UCHAR)
+      return(-1);
+  return((int)num);
+    }
+
+    return(-1);
+}
 
 /* Endogenous linked list of currently unresolved pointer types.
    Initially empty */
@@ -350,7 +395,7 @@ void exit_main_body(){
 void install_func_head(ST_ID id, TYPE ret_type, DIRECTIVE dir){
    PARAM_LIST params;
    BOOLEAN check_args;
-
+	
    /* Creates empty data record */
    ST_DR data_rec = stdr_alloc();
 
@@ -382,6 +427,7 @@ void install_func_head(ST_ID id, TYPE ret_type, DIRECTIVE dir){
       error("Duplicate forward or external function declaration");
       free(data_rec);
    }
+	error("In install ******************!!!");
 
 }
 
@@ -417,7 +463,7 @@ int prepare_to_enter_func_body(ST_ID id, TYPE ret_type) {
 
    /* Call st_lookup to see if id is previously installed in current block */
    data_rec = st_lookup(id, &block);
-
+	error("In prepare to enter function ******************");
    /* If not previously installed then install as new FDECL */
    if (data_rec == NULL) {
       data_rec = stdr_alloc();
@@ -987,10 +1033,16 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
          break;
       case ORD_OP:
          //must be CHAR
-         if (sub_tag != TYUNSIGNEDCHAR && sub_tag != TYSIGNEDCHAR) {
+         if (sub_tag != TYUNSIGNEDCHAR && sub_tag != TYSIGNEDCHAR  && sub_tag != TYPTR) {
             error("Incorrect type in ORD_OP");
             return make_error_expr();
          }
+		if(sub_tag == TYPTR)
+      {
+          sub->tag = INTCONST;
+          sub->u.intval = get_single_char(sub->u.strval);
+      }
+
 
          //since it returns int...I think the type needs to be changed
          ret->type = ty_build_basic(TYSIGNEDLONGINT);
@@ -1079,6 +1131,11 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
    ret->type = left->type; //initially
 
    if (op == ASSIGN_OP) {
+		if(right->tag == STRCONST && ty_query(left->type)==TYUNSIGNEDCHAR)
+      {
+          right->tag = INTCONST;
+          right->u.intval = get_single_char(right->u.strval);
+      }
       if (is_lval(left) == FALSE) {
          error("Assignment requires l-value on the left");          
          return make_error_expr();
@@ -1199,7 +1256,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
          ret->type = ty_build_basic(TYSIGNEDLONGINT);
          break;
       case LESS_OP:
-          error("in less than op");
+          //error("in less than op");
           /*Type check*/
           if((right_type != TYSIGNEDLONGINT && right_type != TYFLOAT && right_type != TYDOUBLE && right_type != TYUNSIGNEDCHAR && right_type != TYSIGNEDCHAR) && (left_type != TYSIGNEDLONGINT && left_type != TYFLOAT && left_type != TYDOUBLE && left_type != TYUNSIGNEDCHAR && left_type != TYSIGNEDCHAR))
           {
@@ -1214,7 +1271,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
               return make_error_expr();
             }
           }
-          error("In less than, right = %d, left = %d", right_type, left_type);
+          //error("In less than, right = %d, left = %d", right_type, left_type);
           /*If the left or right arguments are chars, promote*/
           if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
             EXPR convertedNode = make_un_expr(CONVERT_OP, right);
@@ -1230,19 +1287,64 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
          } 
          ret->type = ty_build_basic(TYSIGNEDLONGINT);
           break; 
-      case EQ_OP: break;
+      case EQ_OP:
+			if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
+            EXPR convertedNode = make_un_expr(CONVERT_OP, right);
+            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
+            ret->u.binop.right = convertedNode;
+         }
+         if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
+            EXPR convertedNode = make_un_expr(CONVERT_OP, left);
+            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
+            ret->u.binop.left = convertedNode;
+         } 
+         ret->type = ty_build_basic(TYSIGNEDLONGINT); 
+		 break;
       case NE_OP:
+			if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
+            EXPR convertedNode = make_un_expr(CONVERT_OP, right);
+            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
+            ret->u.binop.right = convertedNode;
+         }
+         if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
+            EXPR convertedNode = make_un_expr(CONVERT_OP, left);
+            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
+            ret->u.binop.left = convertedNode;
+         } 
+         ret->type = ty_build_basic(TYSIGNEDLONGINT); 
           break;
       case GE_OP:
+			if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
+            EXPR convertedNode = make_un_expr(CONVERT_OP, right);
+            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
+            ret->u.binop.right = convertedNode;
+         }
+         if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
+            EXPR convertedNode = make_un_expr(CONVERT_OP, left);
+            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
+            ret->u.binop.left = convertedNode;
+         } 
+         ret->type = ty_build_basic(TYSIGNEDLONGINT); 
           break;
       case GREATER_OP: 
           //error("In greater than op");
+			if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
+            EXPR convertedNode = make_un_expr(CONVERT_OP, right);
+            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
+            ret->u.binop.right = convertedNode;
+         }
+         if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
+            EXPR convertedNode = make_un_expr(CONVERT_OP, left);
+            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
+            ret->u.binop.left = convertedNode;
+         } 
+         ret->type = ty_build_basic(TYSIGNEDLONGINT); 
           break;
       case LE_OP:
          //type check
          //convert
          //error("in <= op");
-		 error("in less than  = op");
+		 //error("in less than  = op");
          if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
             EXPR convertedNode = make_un_expr(CONVERT_OP, right);
             convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
@@ -1262,6 +1364,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
       default:
          break;
    }
+	//fprintf(stderr,"\n\n make_bin_expr before return\n\n");
    return ret;
 }
 /* gram: assignment_or_call_statement
@@ -1296,7 +1399,7 @@ EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs) {
   else{
     if(lhs.tag == New || lhs.tag == Dispose)
       return lhs;*/
-   
+   error("In check assign!!!!!!!!!!!!!!");
    PARAM_LIST params;
    BOOLEAN check;
 

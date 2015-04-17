@@ -330,8 +330,42 @@ void encode_binop(EXPR_BINOP out, EXPR expr)
   TYPETAG type_tag;
   TYPETAG left_type_tag, right_type_tag;
   error("encode_binop out = %d", out);
+
+if(expr->u.binop.left->tag==INTCONST && expr->u.binop.right->tag==INTCONST)
+{
+ 	printf("\n\n expr->u.binop.left->tag==INTCONST && expr->u.binop.right->tag==INTCONST\n\n");
+			EXPR ret;
+	switch (out) 
+	{
+
+//add SUB, MUL, succ, chr, ord, chr, DIV, MOD, 
+		case ADD_OP: 
+
+			printf("\n\n	ADD_OP	\n\n");
+			printf("\n\n	left is %ld	\n\n", expr->u.binop.left->u.intval);
+			printf("\n\n	right is %ld	\n\n", expr->u.binop.right->u.intval);
+			ret = make_intconst_expr((expr->u.binop.left->u.intval + expr->u.binop.right->u.intval), ty_build_basic(TYSIGNEDLONGINT));
+			/*
+   			ret = (EXPR)malloc(sizeof(EXPR_NODE));
+		    //assert(ret != NULL);
+		    ret->tag = INTCONST;
+		    ret->type = ty_build_basic(TYSIGNEDLONGINT);
+		    ret->u.intval = expr->u.binop.left->u.intval + expr->u.binop.right->u.intval;
+			*/
+		 	printf("\n\n ret->u.intval is %ld\n\n", ret->u.intval);
+			encode_expr(ret);
+		break;
+	}
+}
+else
+{
+	//printf("\n\n\nbefore   encode_expr(expr->u.binop.left); \n\n\n");
   encode_expr(expr->u.binop.left);
+//if(expr->u.binop.right->tag==INTCONST)
+ //printf("\n\nexpr->u.binop.right->tag=INTCONST\n\n");
+//	printf("\n\n\n after encode_expr(expr->u.binop.left); \n\n\n");
   encode_expr(expr->u.binop.right);
+
   type_tag = ty_query(expr->type);
   left_type_tag = ty_query(expr->u.binop.left->type);
   right_type_tag = ty_query(expr->u.binop.right->type);
@@ -368,12 +402,17 @@ void encode_binop(EXPR_BINOP out, EXPR expr)
     case ASSIGN_OP:  
         if(expr->u.binop.left->tag == LVAR)
             b_push_loc_addr(expr->u.binop.left->u.lvar.offset);
-        if(left_type_tag != right_type_tag)
-            b_convert(right_type_tag, left_type_tag);
+        if(left_type_tag != right_type_tag){
+			if(expr->u.binop.right->tag==INTCONST)
+				b_convert(TYSIGNEDLONGINT, left_type_tag);
+			else
+            	b_convert(right_type_tag, left_type_tag);
+		}
         b_assign(left_type_tag);
         b_pop();
         break;
   }
+}
 }
 
 void encode_fcall(EXPR func, EXPR_LIST args)

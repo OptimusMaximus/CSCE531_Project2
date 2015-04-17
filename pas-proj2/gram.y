@@ -709,7 +709,7 @@ for_direction:
 
 simple_statement:
     empty_statement					{}
-  | assignment_or_call_statement	{ encode_expr($1); }
+  | assignment_or_call_statement	{ encode_expr($1);   printf("\n\n after assignment_or_call_statement	\n\n");}
   | standard_procedure_statement    { encode_expr($1); }
   | statement_extensions			{/*Won't deal with these*/}
   ;
@@ -737,7 +737,8 @@ actual_parameter: //type is expr
 /* ASSIGNMENT and procedure calls */
 
 assignment_or_call_statement:
-    variable_or_function_access_maybe_assignment rest_of_statement { $$ = check_assign_or_proc_call($1.expr, $1.id, $2); }
+    variable_or_function_access_maybe_assignment rest_of_statement { $$ = check_assign_or_proc_call($1.expr, $1.id, $2);}
+// printf("\n\nafter check_assign_or_proc_call\n\n");}
   ;
 
 variable_or_function_access_maybe_assignment:
@@ -860,7 +861,7 @@ boolean_expression:
 expression: //type is expression
     expression relational_operator simple_expression  { $$ = make_bin_expr($2, $1, $3); }
   | expression LEX_IN simple_expression  {}
-  | simple_expression  { $$ = $1; }
+  | simple_expression  { $$ = $1; }//printf("\nsimple-expression\n");}
   ;
 
 simple_expression:
