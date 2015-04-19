@@ -438,8 +438,8 @@ pointer_domain_type:
   ;
 
 new_procedural_type: /* builds FUNC TYPE */
-    LEX_PROCEDURE optional_procedural_type_formal_parameter_list  { $$ = ty_build_func(ty_build_basic(TYVOID), $2, TRUE); }
-  | LEX_FUNCTION optional_procedural_type_formal_parameter_list functiontype  { $$ = ty_build_func($3, $2, TRUE); }
+    LEX_PROCEDURE optional_procedural_type_formal_parameter_list  { $$ = ty_build_func(ty_build_basic(TYVOID), $2, TRUE);  }
+  | LEX_FUNCTION optional_procedural_type_formal_parameter_list functiontype  { $$ = ty_build_func($3, $2, TRUE);  }
   ;
 
 optional_procedural_type_formal_parameter_list:

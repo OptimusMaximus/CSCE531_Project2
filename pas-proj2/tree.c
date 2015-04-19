@@ -393,7 +393,7 @@ void exit_main_body(){
    Function abc : Integer; Forward;
 */
 void install_func_head(ST_ID id, TYPE ret_type, DIRECTIVE dir){
-   PARAM_LIST params;
+   PARAM_LIST params = NULL;
    BOOLEAN check_args;
 	
    /* Creates empty data record */
@@ -454,12 +454,13 @@ void install_func_head(ST_ID id, TYPE ret_type, DIRECTIVE dir){
    but args or return type don't match) */
 int prepare_to_enter_func_body(ST_ID id, TYPE ret_type) {
    ST_DR data_rec;
-   PARAM_LIST params;
+   PARAM_LIST params = NULL;
    BOOLEAN check_args;
    TYPE ret_type1;
    int block;
    int init_offset;
 
+	
    /* Call st_lookup to see if id is previously installed in current block */
    data_rec = st_lookup(id, &block);
    /* If not previously installed then install as new FDECL */
@@ -484,8 +485,9 @@ int prepare_to_enter_func_body(ST_ID id, TYPE ret_type) {
       } 
       else {
         /* Check to see if the return type passed in matches the return type you get with the st_lookup */
- 	      ret_type1 = ty_query_func(data_rec->u.decl.type, &params, &check_args);
-
+ 	    ret_type1 = ty_query_func(data_rec->u.decl.type, &params, &check_args);
+		if(params != NULL){ error("params not NULL");
+			}
         if (ty_test_equality(ret_type, ret_type1) == TRUE) {
           /*Change tag from GDECL to FDECL */
           data_rec->tag = FDECL;
@@ -501,7 +503,7 @@ int prepare_to_enter_func_body(ST_ID id, TYPE ret_type) {
 
    /* Enter local scope of the function */
    st_enter_block();
-
+	
    /* Initiialize the formal parameter offset calculation */
    b_init_formal_param_offset();
    
@@ -514,7 +516,6 @@ int prepare_to_enter_func_body(ST_ID id, TYPE ret_type) {
    if (data_rec->u.decl.type == TYVOID) {
       init_offset -= 8;
    }
-   
    return init_offset;
 }
 
@@ -562,7 +563,6 @@ void enter_func_body(ST_ID id, TYPE ret_type, int loc_var_offset) {
 
       params = params->next;
    }
-
    /* If function not a procedure */
    if (tag != TYVOID) {
       /* Allocate size for return value */
@@ -871,7 +871,7 @@ EXPR make_fcall_expr(EXPR func, EXPR_LIST args) {
    PARAM_LIST param;
    TYPE ret_type;
    TYPETAG expr_type;
-   EXPR_LIST aCopy = args; //copy of arg list for adding deref/convert
+   EXPR_LIST args_copy = args; //copy of arg list for adding deref/convert
 
    //check that func is of function type
    if (ty_query(func->type) != TYFUNC) {
@@ -884,66 +884,69 @@ EXPR make_fcall_expr(EXPR func, EXPR_LIST args) {
    
    if (!check) { //likely an external function
       //make all arguments r-values and unary-convert         
-      while (aCopy != NULL) {
-         if (is_lval(aCopy->expr)) { //create a deref node
-            EXPR derefNode = make_un_expr(DEREF_OP, aCopy->expr);
-            aCopy->expr = derefNode; //expr now points to deref node
+      while (args_copy != NULL) {
+		
+         if (is_lval(args_copy->expr)) { //create a deref node
+			//printf("Made a deref node in if for make_fcall_expr\n");
+            EXPR derefNode = make_un_expr(DEREF_OP, args_copy->expr);
+            args_copy->expr = derefNode; //expr now points to deref node
          }
 
          //perform conversions
-         expr_type = ty_query(aCopy->expr->type);
-         if (expr_type == TYSIGNEDCHAR || expr_type == TYUNSIGNEDCHAR) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, aCopy->expr);
+         expr_type = ty_query(args_copy->expr->type);
+        /* if (expr_type == TYSIGNEDCHAR || expr_type == TYUNSIGNEDCHAR) {
+            EXPR convertedNode = make_un_expr(CONVERT_OP, args_copy->expr);
             convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-            aCopy->expr = convertedNode;//expr now points to convert node
+            args_copy->expr = convertedNode;//expr now points to convert node
          }
          else if (expr_type == TYFLOAT) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, aCopy->expr);
+			//printf("in here\n");
+            EXPR convertedNode = make_un_expr(CONVERT_OP, args_copy->expr);
             convertedNode->type = ty_build_basic(TYDOUBLE);
-            aCopy->expr = convertedNode;//expr now points to convert node
-         }
+            args_copy->expr = convertedNode;//expr now points to convert node
+         }*/
          
-         aCopy = aCopy->next;
+         args_copy = args_copy->next;
       }
    }
    else { //check_args is true
-      while (aCopy != NULL && param != NULL) {
+      while (args_copy != NULL && param != NULL) {
          if (param->is_ref == TRUE) { //VAR parameter
             //actual arg must be an l-value whose type 
             //matches the type of the formal param
-            if(ty_test_equality(aCopy->expr->type, param->type) == FALSE) {
+            if(ty_test_equality(args_copy->expr->type, param->type) == FALSE) {
                error("types not equal");
                return make_error_expr();
             }
          }
          else {
             //make actual arg an r-value
-            if (is_lval(aCopy->expr) == TRUE) {
-               EXPR derefNode = make_un_expr(DEREF_OP, aCopy->expr);
-               aCopy->expr = derefNode; //expr now points to convert node
+            if (is_lval(args_copy->expr) == TRUE) {
+               EXPR derefNode = make_un_expr(DEREF_OP, args_copy->expr);
+               args_copy->expr = derefNode; //expr now points to convert node
+				//printf("Made a deref node in else for make_fcall_expr\n");
             }
       
-            //perfrom conversions
-            expr_type = ty_query(aCopy->expr->type);
+            //perform conversions
+            expr_type = ty_query(args_copy->expr->type);
             if (expr_type == TYSIGNEDCHAR || expr_type == TYUNSIGNEDCHAR) {
-               EXPR convertedNode = make_un_expr(CONVERT_OP, aCopy->expr);
+               EXPR convertedNode = make_un_expr(CONVERT_OP, args_copy->expr);
                convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-               aCopy->expr = convertedNode;
+               args_copy->expr = convertedNode;
             }
             else if (expr_type == TYFLOAT) {
-               EXPR convertedNode = make_un_expr(CONVERT_OP, aCopy->expr);
+               EXPR convertedNode = make_un_expr(CONVERT_OP, args_copy->expr);
                convertedNode->type = ty_build_basic(TYDOUBLE);
-               aCopy->expr = convertedNode;
+               args_copy->expr = convertedNode;
             }
          }
 
          //try to convert to type of formal parameter
 
-        aCopy = aCopy->next;
+        args_copy = args_copy->next;
         param = param->next;
       }
    }
-   //check number formal args and param args and if differ then error
 
    //create an fcall node
    EXPR ret;
@@ -978,9 +981,6 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
    TYPE base_type,next;
    long low, high; 
 
-   //ty_print_type(sub->type);
-   //fprintf(stderr, "\n");
-
    if (op == DEREF_OP) {
       return ret;
    }
@@ -993,6 +993,7 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
    else { //expect r-values
       //if op expects an r-value and sub is an l-value, add a DEREF node
       if (is_lval(sub) == TRUE) {
+		 //printf("Made a deref node in make_un_expr\n");
          ret->u.unop.operand = make_un_expr(DEREF_OP,sub);
       }
    }
@@ -1207,14 +1208,36 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
    switch(op) {
       case ADD_OP:
       case SUB_OP:
-      case MUL_OP: 
-          printf("left_type = %d, right_type = %d \n", left_type, right_type);
-          break;
-      case REALDIV_OP: 
+      case MUL_OP:           
+      case REALDIV_OP: //add, sub, mul will fall through to here
+		  if(left_type == TYFLOAT){	
+				left_type = TYDOUBLE;			
+				EXPR convertedNode = make_un_expr(CONVERT_OP, left);
+      			convertedNode->type = ty_build_basic(TYDOUBLE);
+      			ret->u.binop.left = convertedNode;
+				if(right_type == TYSIGNEDLONGINT){
+					EXPR convertedNode = make_un_expr(CONVERT_OP, right);
+      				convertedNode->type = ty_build_basic(TYDOUBLE);
+      				ret->u.binop.right = convertedNode;
+		 		}
+		  }
+		  if(right_type == TYFLOAT){
+				right_type = TYDOUBLE;
+				EXPR convertedNode = make_un_expr(CONVERT_OP, right);
+      			convertedNode->type = ty_build_basic(TYDOUBLE);
+      			ret->u.binop.right = convertedNode;
+				if(left_type == TYSIGNEDLONGINT){
+					EXPR convertedNode = make_un_expr(CONVERT_OP, left);
+      				convertedNode->type = ty_build_basic(TYDOUBLE);
+      				ret->u.binop.left = convertedNode;
+		 		}
+		  }
+		  
+		
       case MOD_OP: //check the types, only numbers
          if ((right_type != TYDOUBLE && right_type != TYSIGNEDLONGINT) || (left_type != TYDOUBLE && left_type != TYSIGNEDLONGINT)) {
             error("Nonnumerical type argument(s) to arithmetic operation");
-            printf("error here\n");
+            error("error here\n");
             return make_error_expr();
          }
          else if (right_type == TYSIGNEDLONGINT && left_type == TYSIGNEDLONGINT) {
@@ -1336,7 +1359,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
       default:
          break;
    }
-	//fprintf(stderr,"\n\n make_bin_expr before return\n\n");
+
    return ret;
 }
 /* gram: assignment_or_call_statement

@@ -189,7 +189,7 @@ void encode_expr(EXPR expr)
 {    
     if (expr == NULL)
         bug("Expression is null ");
-	
+	//printf("In encode expr, expr->tag is %d \n", expr->tag);
     switch (expr->tag) {
         case LFUN: //expr->tag = 4
         case ERROR: break; //expr->tag = 10
@@ -243,23 +243,26 @@ void encode_unop(EXPR_UNOP op, EXPR expr)
     TYPE type, base_type;
     BOOLEAN converted_to_int;
 
+	if(op == DISPOSE_OP)
+		b_alloc_arglist(4);
+	
     encode_expr(expr->u.unop.operand);
-
+	//printf("unop op is %d \n", op);
     converted_to_int = FALSE;
     tag = ty_query(expr->u.unop.operand->type);
     rval_tag = ty_query(expr->type);
-	
+	//printf("tag is %d \n", tag);
 	
     switch(op) {
         case INDIR_OP:
         case PLUS_OP: break;
-        case CONVERT_OP:      
+        case CONVERT_OP:     
             if(tag==TYSUBRANGE) { 
                 base_type = ty_query_subrange(expr->u.unop.operand->type, &low, &high);
                 b_convert(TYSUBRANGE, ty_query(base_type));
             } 
             else if(tag==TYPTR) { 
-
+				
             } 
             else
                 b_convert(tag, rval_tag);
@@ -299,9 +302,7 @@ void encode_unop(EXPR_UNOP op, EXPR expr)
             break;
         case NEW_OP:       
             b_alloc_arglist(4);
-            //b_push_const_int(get_type_size(ty_query_ptr(expr->u.unop.operand->type, &id, &type)));
-            //get_type_size function does not exist
-            b_push_const_int(get_size(ty_query_ptr(expr->u.unop.operand->type, &id)));//, &type)));
+            b_push_const_int(get_size(ty_query_ptr(expr->u.unop.operand->type, &id)));
             b_load_arg(TYUNSIGNEDINT);
             b_funcall_by_name("malloc", TYPTR);
             b_assign(TYPTR);
@@ -311,8 +312,8 @@ void encode_unop(EXPR_UNOP op, EXPR expr)
             b_load_arg(TYPTR);
             b_funcall_by_name("free", TYVOID);
             break;
-        case DEREF_OP:     
-            b_deref(tag);
+        case DEREF_OP:
+			b_deref(tag);
             break;
         case SET_RETURN_OP: 
             b_set_return(ty_query(expr->u.unop.operand->type));
@@ -329,7 +330,7 @@ void encode_binop(EXPR_BINOP out, EXPR expr)
     INTCONST, REALCONST, STRCONST, GID, LVAR, LFUN, NULLOP, UNOP, BINOP,
     FCALL, ERROR
 	} EXPR_TAG;*/
-  printf("encode_binop left_tag = %d right_tag %d \n\n", expr->u.binop.left->tag, expr->u.binop.right->tag);
+  //error("encode_binop left_tag = %d right_tag %d \n\n", expr->u.binop.left->tag, expr->u.binop.right->tag);
 
 //Constant folding done here
 //add SUB, MUL, succ, chr, ord, chr, DIV, MOD, 
@@ -447,14 +448,16 @@ else if(expr->u.binop.left->tag==REALCONST && expr->u.binop.right->tag==UNOP){
 // }
 else
 {
-	//printf("\n\n\nbefore   encode_expr(expr->u.binop.left); \n\n\n");
+	////printf("\n\n\nbefore   encode_expr(expr->u.binop.left); \n\n\n");
   encode_expr(expr->u.binop.left);
 //if(expr->u.binop.right->tag==INTCONST)
- //printf("\n\nexpr->u.binop.right->tag=INTCONST\n\n");
-//	printf("\n\n\n after encode_expr(expr->u.binop.left); \n\n\n");
+ ////printf("\n\nexpr->u.binop.right->tag=INTCONST\n\n");
+//	//printf("\n\n\n after encode_expr(expr->u.binop.left); \n\n\n");
   encode_expr(expr->u.binop.right);
 
   type_tag = ty_query(expr->type);
+  if(type_tag == TYFLOAT) type_tag = TYDOUBLE;
+
   left_type_tag = ty_query(expr->u.binop.left->type);
   right_type_tag = ty_query(expr->u.binop.right->type);
   
@@ -543,7 +546,7 @@ void encode_fcall(EXPR func, EXPR_LIST args)
 
                 if(ty_test_equality(t_arg->expr->type, func_params->type)==FALSE) 
                    error("Parameter types do not match");
-
+				
                 b_load_arg(TYPTR);
             } 
             else { 
@@ -562,8 +565,8 @@ void encode_fcall(EXPR func, EXPR_LIST args)
             }
          } 
         else {     
-            if(is_lval(t_arg->expr)==TRUE) 
-                b_deref(arg_tag);
+            //if(is_lval(t_arg->expr)==TRUE) 
+              //  b_deref(arg_tag); // Maximus commented out
             if(arg_tag==TYSIGNEDCHAR||arg_tag==TYUNSIGNEDCHAR) { 
                 b_convert(arg_tag, TYSIGNEDLONGINT);
                 b_load_arg(TYSIGNEDLONGINT);
