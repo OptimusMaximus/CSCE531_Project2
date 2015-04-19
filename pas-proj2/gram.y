@@ -722,7 +722,7 @@ empty_statement:
 
 optional_par_actual_parameter_list:
     /* empty */ { $$ = NULL; }
-  | '(' actual_parameter_list ')' { $$ = expr_list_reverse($2); }
+  | '(' actual_parameter_list ')' { $$ = ($2); }
   ;
 
 actual_parameter_list:
@@ -924,9 +924,9 @@ variable_or_function_access_no_id:
   | p_INPUT		{/*Not using*/}
   | variable_or_function_access '.' new_identifier {/*Not using*/}
   | '(' expression ')'	{ $$ = $2; }
-  | variable_or_function_access pointer_char
+  | variable_or_function_access pointer_char { $$ = make_un_expr(INDIR_OP,$1); }
   | variable_or_function_access '[' index_expression_list ']'	{/*Project 3*/}
-  | variable_or_function_access_no_standard_function '(' actual_parameter_list ')' {}
+  | variable_or_function_access_no_standard_function '(' actual_parameter_list ')' { $$ = make_fcall_expr($1, expr_list_reverse($3));}
   | p_NEW '(' variable_access_or_typename ')' { $$ = make_un_expr(NEW_OP, $3); }
   ;
 

@@ -189,10 +189,7 @@ void encode_expr(EXPR expr)
 {    
     if (expr == NULL)
         bug("Expression is null ");
-	error("expr->tag = %d ", expr->tag);
 	
-/*	char *temp = st_get_id_str(expr->u.gid);
-	printf("var %s", temp);*/
     switch (expr->tag) {
         case LFUN: //expr->tag = 4
         case ERROR: break; //expr->tag = 10
@@ -245,8 +242,6 @@ void encode_unop(EXPR_UNOP op, EXPR expr)
     ST_ID id;
     TYPE type, base_type;
     BOOLEAN converted_to_int;
-
-	error("encode_unop op = %d ", op);
 
     encode_expr(expr->u.unop.operand);
 
@@ -356,7 +351,6 @@ if(expr->u.binop.left->tag==INTCONST && expr->u.binop.right->tag==INTCONST)
 			encode_expr(ret);			
 			break;
     	case DIV_OP: 
-			printf("In div_op");
 			ret = make_intconst_expr((expr->u.binop.left->u.intval / expr->u.binop.right->u.intval), ty_build_basic(TYSIGNEDLONGINT));
 			encode_expr(ret);			
 			break;
@@ -424,6 +418,33 @@ else if(expr->u.binop.left->tag==REALCONST && expr->u.binop.right->tag==UNOP){
 			break;
 	}
 }
+// else if(expr->u.binop.left->tag == UNOP && expr->u.binop.right->tag == INTCONST){
+//     EXPR ret;
+//     switch(out){
+//         case ADD_OP: 
+//             ret = make_realconst_expr(expr->u.binop.left->u.unop.operand->u.realval + (double)(expr->u.binop.right->u.intval));
+//             encode_expr(ret);
+//             break;
+//         case SUB_OP:
+//             ret = make_realconst_expr(expr->u.binop.left->u.unop.operand->u.realval - (double)(expr->u.binop.right->u.intval));
+//             encode_expr(ret);
+//             break;
+//         case MUL_OP: 
+//             ret = make_realconst_expr(expr->u.binop.left->u.unop.operand->u.realval * (double)(expr->u.binop.right->u.intval));
+//             encode_expr(ret);           
+//             break;
+//         case DIV_OP: 
+//             //This is for ints
+//             break;
+//         case MOD_OP: 
+//             //This is for ints
+//             break;    
+//         case REALDIV_OP: 
+//             ret = make_realconst_expr(expr->u.binop.left->u.unop.operand->u.realval / (double)(expr->u.binop.right->u.intval));
+//             encode_expr(ret);
+//             break;
+//     }
+// }
 else
 {
 	//printf("\n\n\nbefore   encode_expr(expr->u.binop.left); \n\n\n");
@@ -510,8 +531,8 @@ void encode_fcall(EXPR func, EXPR_LIST args)
     }
 
     b_alloc_arglist(arg_list_size);
-    t_arg=args;
-    while(t_arg!=NULL) {
+    t_arg = args;
+    while(t_arg != NULL) {
 
         encode_expr(t_arg->expr);
         arg_tag = ty_query(t_arg->expr->type);

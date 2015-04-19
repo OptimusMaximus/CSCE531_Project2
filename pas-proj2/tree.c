@@ -427,7 +427,6 @@ void install_func_head(ST_ID id, TYPE ret_type, DIRECTIVE dir){
       error("Duplicate forward or external function declaration");
       free(data_rec);
    }
-	error("In install ******************!!!");
 
 }
 
@@ -463,7 +462,6 @@ int prepare_to_enter_func_body(ST_ID id, TYPE ret_type) {
 
    /* Call st_lookup to see if id is previously installed in current block */
    data_rec = st_lookup(id, &block);
-	error("In prepare to enter function ******************");
    /* If not previously installed then install as new FDECL */
    if (data_rec == NULL) {
       data_rec = stdr_alloc();
@@ -980,9 +978,8 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
    TYPE base_type,next;
    long low, high; 
 
-   error("unop is %d", op);
-   ty_print_type(sub->type);
-   fprintf(stderr, "\n");
+   //ty_print_type(sub->type);
+   //fprintf(stderr, "\n");
 
    if (op == DEREF_OP) {
       return ret;
@@ -1020,7 +1017,6 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
    //switch statement on op for error checking
    switch (op) {
       case CONVERT_OP:
-		error("Im in convert 10 stars****************");
          break;
       case DEREF_OP:
          break;
@@ -1131,7 +1127,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
    ret->type = left->type; //initially
 
    if (op == ASSIGN_OP) {
-		if(right->tag == STRCONST && ty_query(left->type)==TYUNSIGNEDCHAR)
+		  if(right->tag == STRCONST && ty_query(left->type)==TYUNSIGNEDCHAR)
       {
           right->tag = INTCONST;
           right->u.intval = get_single_char(right->u.strval);
@@ -1148,31 +1144,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
          error("Illegal conversion");
          return make_error_expr();
       }
-      // else if (left_type == TYSIGNEDCHAR && (right_type == TYFLOAT || right_type == TYDOUBLE || right_type == TYSIGNEDLONGINT)) {
-      //    error("Illegal conversion2");
-      //    return make_error_expr();
-      // }
-      /*else if (left_type == TYDOUBLE || left_type == TYUNSIGNEDLONGINT || left_type == TYSIGNEDLONGINT || left_type == TYFLOAT) {
-         if (right_type !=  TYUNSIGNEDLONGINT && right_type != TYFLOAT && right_type != TYSIGNEDLONGINT && right_type != TYDOUBLE) {
-            error("Illegal conversion");
-            return make_error_expr();
-         }
-      }
-      else if (left_type == TYUNSIGNEDCHAR || left_type == TYSIGNEDCHAR) {
-         if (right->tag == STRCONST) {
-            ret->u.binop.right = make_intconst_expr(right->u.strval[0], ty_build_basic(TYSIGNEDLONGINT));
-         }
-         else {
-            error("Illegal conversion");
-            return make_error_expr();
-         }
-      }  
-      else if (right_type != left_type) {
-         error("Illegal conversion");
-         return make_error_expr();
-      }*/
-   }
-
+    }
 
    //if op expects r-values, insert DEREF nodes if
    if (is_lval(left) == TRUE) {
@@ -1229,16 +1201,16 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
       convertedNode->type = ty_build_basic(TYDOUBLE);
       ret->u.binop.right = convertedNode;
    }
-	
-
+   
    left_type = ty_query(ret->u.binop.left->type);
    right_type = ty_query(ret->u.binop.right->type);
-	error("In make bin expr!!!!!!!!!!!!!!!!!!!, op is %d", op);
    switch(op) {
       case ADD_OP:
       case SUB_OP:
-      case MUL_OP:
-      case REALDIV_OP:
+      case MUL_OP: 
+          printf("left_type = %d, right_type = %d \n", left_type, right_type);
+          break;
+      case REALDIV_OP: 
       case MOD_OP: //check the types, only numbers
          if ((right_type != TYDOUBLE && right_type != TYSIGNEDLONGINT) || (left_type != TYDOUBLE && left_type != TYSIGNEDLONGINT)) {
             error("Nonnumerical type argument(s) to arithmetic operation");
@@ -1277,13 +1249,13 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
             EXPR convertedNode = make_un_expr(CONVERT_OP, right);
             convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
             ret->u.binop.right = convertedNode;
-            error("converted right");
+            //error("converted right");
          }
          if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
             EXPR convertedNode = make_un_expr(CONVERT_OP, left);
             convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
             ret->u.binop.left = convertedNode;
-            error("converted left");
+            //error("converted left");
          } 
          ret->type = ty_build_basic(TYSIGNEDLONGINT);
           break; 
@@ -1389,17 +1361,6 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
 */
 EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs) {
 
-  /*if(rhs!=null){
-    char *a->*st_get_id_str(id);
-    if(){
-    }//end if
-    else{
-    make_bin_expr(ASSIGN_OP, lhs, rhs);
-    }//end else
-  else{
-    if(lhs.tag == New || lhs.tag == Dispose)
-      return lhs;*/
-   error("In check assign!!!!!!!!!!!!!!");
    PARAM_LIST params;
    BOOLEAN check;
 
