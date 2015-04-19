@@ -1145,6 +1145,21 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
          error("Illegal conversion");
          return make_error_expr();
       }
+	  else if((left_type == TYUNSIGNEDCHAR || left_type ==
+    TYSIGNEDCHAR) && (right_type == TYFLOAT || right_type == TYDOUBLE)){
+		error("Illegal conversion");
+         return make_error_expr();
+	  }
+	  else if((right_type == TYUNSIGNEDCHAR || right_type ==
+    TYSIGNEDCHAR) && (left_type == TYFLOAT || left_type == TYDOUBLE)){
+		error("Illegal conversion");
+         return make_error_expr();
+	  }
+	  /*else if((left_type == TYUNSIGNEDCHAR || left_type ==
+    TYSIGNEDCHAR) && (right_type == TYSIGNEDLONGINT)){
+		error("Illegal conversion for boolean");
+         return make_error_expr();
+	  }*/
     }
 
    //if op expects r-values, insert DEREF nodes if
@@ -1237,7 +1252,6 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
       case MOD_OP: //check the types, only numbers
          if ((right_type != TYDOUBLE && right_type != TYSIGNEDLONGINT) || (left_type != TYDOUBLE && left_type != TYSIGNEDLONGINT)) {
             error("Nonnumerical type argument(s) to arithmetic operation");
-            error("error here\n");
             return make_error_expr();
          }
          else if (right_type == TYSIGNEDLONGINT && left_type == TYSIGNEDLONGINT) {
@@ -1250,96 +1264,27 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
       case DIV_OP:
          ret->type = ty_build_basic(TYSIGNEDLONGINT);
          break;
-      case LESS_OP:
-          //error("in less than op");
-          /*Type check*/
-          if((right_type != TYSIGNEDLONGINT && right_type != TYFLOAT && right_type != TYDOUBLE && right_type != TYUNSIGNEDCHAR && right_type != TYSIGNEDCHAR) && (left_type != TYSIGNEDLONGINT && left_type != TYFLOAT && left_type != TYDOUBLE && left_type != TYUNSIGNEDCHAR && left_type != TYSIGNEDCHAR))
-          {
-            error("Illegal type arguments to comparison operator");
-            return make_error_expr();
-          }
-          else if(((right_type != TYSIGNEDLONGINT || right_type != TYFLOAT || right_type != TYDOUBLE || right_type != TYUNSIGNEDCHAR || right_type != TYSIGNEDCHAR) || (left_type != TYSIGNEDLONGINT || left_type != TYFLOAT || left_type != TYDOUBLE || left_type != TYUNSIGNEDCHAR || left_type != TYSIGNEDCHAR)))
-          {
-            if(right_type != left_type)
-            {
-              error("Incompatible type arguments to comparison operator");
-              return make_error_expr();
-            }
-          }
-          //error("In less than, right = %d, left = %d", right_type, left_type);
-          /*If the left or right arguments are chars, promote*/
-          if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, right);
-            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-            ret->u.binop.right = convertedNode;
-            //error("converted right");
-         }
-         if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, left);
-            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-            ret->u.binop.left = convertedNode;
-            //error("converted left");
-         } 
-         ret->type = ty_build_basic(TYSIGNEDLONGINT);
-          break; 
+      case LESS_OP://Fall through for <, <=, =, !=, >=, >
       case EQ_OP:
-			if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, right);
-            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-            ret->u.binop.right = convertedNode;
-         }
-         if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, left);
-            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-            ret->u.binop.left = convertedNode;
-         } 
-         ret->type = ty_build_basic(TYSIGNEDLONGINT); 
-		 break;
       case NE_OP:
-			if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, right);
-            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-            ret->u.binop.right = convertedNode;
-         }
-         if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, left);
-            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-            ret->u.binop.left = convertedNode;
-         } 
-         ret->type = ty_build_basic(TYSIGNEDLONGINT); 
-          break;
       case GE_OP:
-			if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, right);
-            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-            ret->u.binop.right = convertedNode;
-         }
-         if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, left);
-            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-            ret->u.binop.left = convertedNode;
-         } 
-         ret->type = ty_build_basic(TYSIGNEDLONGINT); 
-          break;
-      case GREATER_OP: 
-          //error("In greater than op");
-			if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, right);
-            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-            ret->u.binop.right = convertedNode;
-         }
-         if (left_type == TYSIGNEDCHAR || left_type == TYUNSIGNEDCHAR) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, left);
-            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-            ret->u.binop.left = convertedNode;
-         } 
-         ret->type = ty_build_basic(TYSIGNEDLONGINT); 
-          break;
+      case GREATER_OP: 		
       case LE_OP:
-         //type check
-         //convert
-         //error("in <= op");
-		 //error("in less than  = op");
+		  /*Type check*/
+		  //error("right %d left %d", right_type, left_type);
+          /*if((right_type != TYSIGNEDLONGINT || right_type != TYFLOAT || right_type != TYDOUBLE || right_type != TYUNSIGNEDCHAR || right_type != TYSIGNEDCHAR) && (left_type != TYSIGNEDLONGINT || left_type != TYFLOAT || left_type != TYDOUBLE || left_type != TYUNSIGNEDCHAR || left_type != TYSIGNEDCHAR))*/
+		  if(right_type != left_type)
+          { 
+			if(right_type != TYSIGNEDCHAR && left_type == TYSIGNEDLONGINT){
+            	error("Illegal conversion");
+            	return make_error_expr();
+			}
+			else if(left_type != TYSIGNEDCHAR && right_type == TYSIGNEDLONGINT){
+			    error("Illegal conversion");
+            	return make_error_expr();
+			}
+          }
+          
          if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
             EXPR convertedNode = make_un_expr(CONVERT_OP, right);
             convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
@@ -1353,9 +1298,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
          ret->type = ty_build_basic(TYSIGNEDLONGINT);       
          break;
       case ASSIGN_OP:
-         //check for illegal conversions
-
-         break;
+          break;
       default:
          break;
    }
@@ -1398,7 +1341,7 @@ EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs) {
             return ret;
          }
          else {
-            error("Function type is TYVOID\n");
+            error("Cannot set the return value of a procedure");
             return make_error_expr();
          }
       }
@@ -1438,7 +1381,10 @@ EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs) {
             return make_error_expr();
          }
       }
-      else { //any other tag is error
+      else if (lhs->tag == ERROR){ 
+         return make_error_expr();
+      }
+	  else{ //any other tag is error
          error("Procedure call expected");
          return make_error_expr();
       }
