@@ -63,9 +63,9 @@
 #include "message.h"
 
 
-/* Function stack variables */
+/* Variables used for tracking the function stack  */
 ST_ID func_id_stack[BS_DEPTH];
-int fi_top = -1;
+int stack_counter = -1;
 
 /* Cause the `yydebug' variable to be defined.  */
 #define YYDEBUG 1
@@ -737,7 +737,7 @@ actual_parameter: //type is expr
 /* ASSIGNMENT and procedure calls */
 
 assignment_or_call_statement:
-    variable_or_function_access_maybe_assignment rest_of_statement { $$ = check_assign_or_proc_call($1.expr, $1.id, $2);}
+    variable_or_function_access_maybe_assignment rest_of_statement { $$ = check_func_or_proc_or_assign($1.expr, $1.id, $2);}
   ;
 
 variable_or_function_access_maybe_assignment:

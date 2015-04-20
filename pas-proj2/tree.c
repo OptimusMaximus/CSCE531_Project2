@@ -17,6 +17,7 @@
 #include "types.h"
 #include <stdio.h>
 #include <assert.h>
+//For constant folding
 static const unsigned long MAX_UCHAR = (unsigned long)(unsigned char)(-1);
 static int get_single_char(const char * str)
 {
@@ -459,7 +460,6 @@ int prepare_to_enter_func_body(ST_ID id, TYPE ret_type) {
    TYPE ret_type1;
    int block;
    int init_offset;
-
 	
    /* Call st_lookup to see if id is previously installed in current block */
    data_rec = st_lookup(id, &block);
@@ -497,9 +497,10 @@ int prepare_to_enter_func_body(ST_ID id, TYPE ret_type) {
         }
       }
    }
-
-   fi_top++; // increment stack
-   func_id_stack[fi_top] = id; //set value
+   /* Increment stack counter */
+   stack_counter++;
+   /* Set the id to the appropriate stack_counter location */
+   func_id_stack[stack_counter] = id;
 
    /* Enter local scope of the function */
    st_enter_block();
@@ -512,7 +513,7 @@ int prepare_to_enter_func_body(ST_ID id, TYPE ret_type) {
 
    /* Get initial offset */
    init_offset = b_get_local_var_offset();
-   //error("in enter_func(), offset is %d ", init_offset);
+
    if (data_rec->u.decl.type == TYVOID) {
       init_offset -= 8;
    }
@@ -533,7 +534,6 @@ void enter_func_body(ST_ID id, TYPE ret_type, int loc_var_offset) {
    ST_DR data_rec;
    long low,high;
 
-   //error("local offset is %d", loc_var_offset);
    /* Enter the function */
    b_func_prologue(st_get_id_str(id));
 
@@ -581,8 +581,8 @@ void exit_func_body(ST_ID id, TYPE ret_type) {
   /* Get the tag associated with the return type */
   tag = ty_query(ret_type);
 
-  //pops the function id from the global stack;
-  fi_top--;
+  /* Decrement the stack counter */
+  stack_counter--;
 
   if (tag == TYSUBRANGE) {
     b_prepare_return(ty_query(ty_query_subrange(ret_type, &low, &high)));
@@ -605,7 +605,7 @@ void install_params(PARAM_LIST list) {
    while (list != NULL) {
       /* Creates empty data record */
       ST_DR data_rec = stdr_alloc();
-
+	  /* Fill in data record */
       data_rec->tag = PDECL;
       data_rec->u.decl.sc = list->sc;
       data_rec->u.decl.is_ref = list->is_ref;
@@ -631,32 +631,25 @@ void install_params(PARAM_LIST list) {
    }
 }
 
-/************************************************************************
- * Prepend an EXPR onto the front of an EXPR_LIST                       *
- *                                                                      *
- * Return: altered EXPR_LIST list                                       *
- ************************************************************************/
+/* Prepend an EXPR onto the front of an EXPR_LIST                       
+   Return: altered EXPR_LIST list                                       
+ */
 EXPR_LIST expr_prepend(EXPR expr, EXPR_LIST list) {
-   EXPR_LIST alt_list;
-   alt_list = (EXPR_LIST)malloc(sizeof(EXPR_LIST_NODE));
+   EXPR_LIST new_list;
+   new_list = (EXPR_LIST)malloc(sizeof(EXPR_LIST_NODE));
 
-   alt_list->expr = expr;
-   alt_list->next = NULL;
+   new_list->expr = expr;
+   new_list->next = NULL;
 
-   //check if list is empty
    if (list != NULL) {
-      //pushing the list to the end of alt_list
-      alt_list->next = list;
+      new_list->next = list;
    }
-
-   return alt_list;
+   return new_list;
 }
 
-/************************************************************************
- * Reverses a list of EXPRs                                             *
- *                                                                      *
- * Return: reversed EXPR_LIST                                           *
- ************************************************************************/
+/* Reverses a list of EXPRs                                             
+   Return: reversed EXPR_LIST                                           
+*/
 EXPR_LIST expr_list_reverse(EXPR_LIST list) {
    EXPR_LIST tmp;
    EXPR_LIST prev = NULL;
@@ -671,35 +664,31 @@ EXPR_LIST expr_list_reverse(EXPR_LIST list) {
    return prev;
 }
 
-/* Deallocates an expression tree.  Subexpressions and other subobjects
-   are deallocated recursively, postorder. */
+/* Deallocates an expression tree.  Subexpressions and other sub-objects
+   are deallocated recursively, postorder. 
+*/
 void expr_free(EXPR expr){
-
     if (expr != NULL){
       expr_free(expr);
       free(expr);
-    }
-  
+    }  
 }
-
+/* Deallocates an expression tree list. */
 void expr_list_free(EXPR_LIST list){
   
   if (list != NULL){
     expr_list_free(list);
     free(list);
-  }
-  
+  }  
 }
 
-/************************************************************************
- * Creates a new (GID, LFUN, LVAR) type                                 *
- *                                                                      *
- * Return: the new node  
+/* Creates a new (GID, LFUN, LVAR) type                                 
+   Return: the new node  
 
    Examples:
    i := 5;   i  would be a id_expr node 
-   j := i;   both j and i would be an expr node                         *
- ************************************************************************/
+   j := i;   both j and i would be an id_expr node
+*/
 EXPR make_id_expr(ST_ID id) {
    ST_DR data_rec;
    int block;
@@ -707,7 +696,6 @@ EXPR make_id_expr(ST_ID id) {
    ret = (EXPR)malloc(sizeof(EXPR_NODE));
    assert(ret != NULL);
 
-   //look up information for id, error if not found or TYPENAME
    data_rec = st_lookup(id, &block);
    if (data_rec == NULL) {
       error("Undeclared identifier \"%s\" in expression", st_get_id_str(id));
@@ -749,13 +737,9 @@ EXPR make_id_expr(ST_ID id) {
    return ret;
 }
 
-/************************************************************************
- * Creates a new INTCONST node with given type and value               *
- *                                                                      *
- * Return: the new node 
-   Example:
-   i := 5;  5 would be an intconst expr node                            *
- ************************************************************************/
+/* Creates a new INTCONST node with given type and value               
+   Return: the new node 
+*/
 EXPR make_intconst_expr(long val, TYPE type) {
    EXPR ret;
    ret = (EXPR)malloc(sizeof(EXPR_NODE));
@@ -766,13 +750,10 @@ EXPR make_intconst_expr(long val, TYPE type) {
    return ret;
 }
 
-/************************************************************************
- * Creates a new REALCONST node with TYDOUBLE type and given value      *
- *                                                                      *
- * Return: the new node  
-   Example:
-   i := 16.01  16.01 would be a realconst expr node                     *
- ************************************************************************/
+/*
+  Creates a new REALCONST node with TYDOUBLE type and given value  
+   Return: the new node  
+*/
 EXPR make_realconst_expr(double val) {
    EXPR ret;
    ret = (EXPR)malloc(sizeof(EXPR_NODE));
@@ -783,26 +764,22 @@ EXPR make_realconst_expr(double val) {
    return ret;
 }
 
-/************************************************************************
- * Creates a new STRCONST node                                          *
- *                                                                      *
- * Return: the new node                                                 *
- ************************************************************************/
+/* Creates a new STRCONST node                                          
+   Return: the new node                                                 
+*/
 EXPR make_strconst_expr(char *str) {
    EXPR ret;
    ret = (EXPR)malloc(sizeof(EXPR_NODE));
    assert(ret != NULL);
    ret->tag = STRCONST;
-   ret->type = ty_build_ptr(ty_build_basic(TYUNSIGNEDCHAR));//(NULL, ty_build_basic(TYUNSIGNEDCHAR));
+   ret->type = ty_build_ptr(ty_build_basic(TYUNSIGNEDCHAR));
    ret->u.strval = str;
    return ret;
 }  
 
-/************************************************************************
- * Creates a new NULLOP node with given op and TYPE depends on op       *
- *                                                                      *
- * Return: the new node                                                 *
- ************************************************************************/
+/* Creates a new NULLOP node with given op and TYPE depends on op     
+   Return: the new node                                                
+*/
 EXPR make_null_expr(EXPR_NULLOP op) {
    EXPR ret;
    ret = (EXPR)malloc(sizeof(EXPR_NODE));
@@ -819,10 +796,9 @@ EXPR make_null_expr(EXPR_NULLOP op) {
    return ret;
 }
 
-/************************************************************************
- * Creates a new ERROR node with type ty_build_basic(TYERROR).          *
- * Returns new node                                                     *
- ************************************************************************/
+/* Creates a new ERROR node with type ty_build_basic(TYERROR).          
+   Return: the new node                                                     
+*/
 EXPR make_error_expr() {
    EXPR ret;
    ret = (EXPR)malloc(sizeof(EXPR_NODE));
@@ -832,19 +808,15 @@ EXPR make_error_expr() {
    return ret;
 }
 
-/************************************************************************
- * Function checks to see if EXPR is l-value, can be done by looking    *
- * at tag and other information                                         *
- *                                                                      *
- * Return: Boolean value, TRUE if l-value                               *
- ************************************************************************/
+/* Function to check if an expression is an l-value 
+   LVAR, INDIR_OP, and GLOBAL IDS that aren't functions or errors are l-values
+   Return: TRUE if l-value                               
+*/
 BOOLEAN is_lval(EXPR expr) {
-   //fist check tag of expr
-   if (expr->tag == LVAR) { //all LVARs are l-val
+   if (expr->tag == LVAR)
       return TRUE;
-   }
    else if (expr->tag == GID) {
-      if (ty_query(expr->type) == TYFUNC || ty_query(expr->type) == TYERROR) { //l-val only if data type
+      if (ty_query(expr->type) == TYFUNC || ty_query(expr->type) == TYERROR) {
          return FALSE;
       }
       else {
@@ -852,82 +824,59 @@ BOOLEAN is_lval(EXPR expr) {
       }
    }
    else if (expr->tag == UNOP) {
-      if (expr->u.unop.op == INDIR_OP) { //l-val if indirection op
+      if (expr->u.unop.op == INDIR_OP) {
          return TRUE;
       }
    }
-   else {
+   else 
       return FALSE;
-   }
 }
 
-/************************************************************************
- * Creates a new EXPR node of type FCALL                                *
- *                                                                      *
- * Return: the new node                                                 *
- ************************************************************************/
+/* Creates a new EXPR node of type FCALL                              
+   Return: the new node                                                 
+*/
 EXPR make_fcall_expr(EXPR func, EXPR_LIST args) {
-   BOOLEAN check;
-   PARAM_LIST param;
+   BOOLEAN check_args;
+   PARAM_LIST params;
    TYPE ret_type;
    TYPETAG expr_type;
-   EXPR_LIST args_copy = args; //copy of arg list for adding deref/convert
+   EXPR_LIST args_copy = args;
 
-   //check that func is of function type
    if (ty_query(func->type) != TYFUNC) {
       error("not functiontype");
       return make_error_expr();
    }
 
-   //check check_args flag
-   ret_type = ty_query_func(func->type, &param, &check);
+   ret_type = ty_query_func(func->type, &params, &check_args);
    
-   if (!check) { //likely an external function
-      //make all arguments r-values and unary-convert         
-      while (args_copy != NULL) {
-		
+   if (!check_args) {
+      /* Make all arguments r-values and unary-convert */         
+      while (args_copy != NULL) {		
          if (is_lval(args_copy->expr)) { //create a deref node
-			//printf("Made a deref node in if for make_fcall_expr\n");
             EXPR derefNode = make_un_expr(DEREF_OP, args_copy->expr);
             args_copy->expr = derefNode; //expr now points to deref node
-         }
-
-         //perform conversions
-         expr_type = ty_query(args_copy->expr->type);
-        /* if (expr_type == TYSIGNEDCHAR || expr_type == TYUNSIGNEDCHAR) {
-            EXPR convertedNode = make_un_expr(CONVERT_OP, args_copy->expr);
-            convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
-            args_copy->expr = convertedNode;//expr now points to convert node
-         }
-         else if (expr_type == TYFLOAT) {
-			//printf("in here\n");
-            EXPR convertedNode = make_un_expr(CONVERT_OP, args_copy->expr);
-            convertedNode->type = ty_build_basic(TYDOUBLE);
-            args_copy->expr = convertedNode;//expr now points to convert node
-         }*/
-         
+         }         
          args_copy = args_copy->next;
       }
    }
-   else { //check_args is true
-      while (args_copy != NULL && param != NULL) {
-         if (param->is_ref == TRUE) { //VAR parameter
+   else {
+      while (args_copy != NULL && params != NULL) {
+         if (params->is_ref == TRUE) { //VAR parameter
             //actual arg must be an l-value whose type 
             //matches the type of the formal param
-            if(ty_test_equality(args_copy->expr->type, param->type) == FALSE) {
+            if(ty_test_equality(args_copy->expr->type, params->type) == FALSE) {
                error("types not equal");
                return make_error_expr();
             }
          }
          else {
-            //make actual arg an r-value
+            /* Make actual argument an r-value */
             if (is_lval(args_copy->expr) == TRUE) {
                EXPR derefNode = make_un_expr(DEREF_OP, args_copy->expr);
                args_copy->expr = derefNode; //expr now points to convert node
-				//printf("Made a deref node in else for make_fcall_expr\n");
             }
       
-            //perform conversions
+            /* Perform unary conversions */
             expr_type = ty_query(args_copy->expr->type);
             if (expr_type == TYSIGNEDCHAR || expr_type == TYUNSIGNEDCHAR) {
                EXPR convertedNode = make_un_expr(CONVERT_OP, args_copy->expr);
@@ -940,15 +889,11 @@ EXPR make_fcall_expr(EXPR func, EXPR_LIST args) {
                args_copy->expr = convertedNode;
             }
          }
-
-         //try to convert to type of formal parameter
-
         args_copy = args_copy->next;
-        param = param->next;
+        params = params->next;
       }
    }
 
-   //create an fcall node
    EXPR ret;
    ret = (EXPR)malloc(sizeof(EXPR_NODE));
    assert(ret != NULL);
@@ -960,14 +905,11 @@ EXPR make_fcall_expr(EXPR func, EXPR_LIST args) {
    return ret;
 }
 
-/************************************************************************
- * Creates a new UNOP node, with op and sub                             *
- * Also creates DEREF nodes and conversions if necessary                *
- *                                                                      *
- * Return: the new node                                                 *
- ************************************************************************/
+/* Creates a new UNOP node, with op as an operation and sub as a sub expression                             
+   Also creates DEREF nodes and conversions if necessary                
+   Return: the new node                                                 
+ */
 EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
-   /*new node variables & initial assignments*/
    EXPR ret;
    ret = (EXPR)malloc(sizeof(EXPR_NODE));
    assert(ret != NULL);
@@ -975,7 +917,7 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
    ret->type = sub->type;
    ret->u.unop.op = op;
    ret->u.unop.operand = sub;
-   /*querying variables*/
+ 
    TYPETAG sub_tag = ty_query(sub->type);
    ST_ID id;
    TYPE base_type,next;
@@ -985,21 +927,19 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
       return ret;
    }
    
-   if (op == ADDRESS_OP || op == NEW_OP) { //expect l-values
-      if (is_lval(sub) == FALSE) {
-         return make_error_expr();
-      }
+   if (op == ADDRESS_OP || op == NEW_OP) {
+      if (is_lval(sub) == FALSE)
+         return make_error_expr(); 
    }
    else { //expect r-values
       //if op expects an r-value and sub is an l-value, add a DEREF node
       if (is_lval(sub) == TRUE) {
-		 //printf("Made a deref node in make_un_expr\n");
          ret->u.unop.operand = make_un_expr(DEREF_OP,sub);
       }
    }
 
    sub_tag = ty_query(sub->type);
-   //subexpression is unary-converted
+   /* Subexpression is unary-converted */
    if (is_lval(sub) == FALSE) {
       if (sub_tag == TYFLOAT) {
          EXPR convertedNode = make_un_expr(CONVERT_OP, sub);
@@ -1015,7 +955,7 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
    }
 
    sub_tag = ty_query(sub->type);
-   //switch statement on op for error checking
+   /* Do error checks */
    switch (op) {
       case CONVERT_OP:
          break;
@@ -1034,14 +974,10 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
             error("Incorrect type in ORD_OP");
             return make_error_expr();
          }
-		if(sub_tag == TYPTR)
-      {
+		if(sub_tag == TYPTR) {
           sub->tag = INTCONST;
           sub->u.intval = get_single_char(sub->u.strval);
-      }
-
-
-         //since it returns int...I think the type needs to be changed
+         }
          ret->type = ty_build_basic(TYSIGNEDLONGINT);
          break;
       case CHR_OP:
@@ -1068,68 +1004,42 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
          }
          break;
       case PLUS_OP:
-         //check type
          if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE) {
             error("Incorrect type in UPLUS_OP");
             return make_error_expr();
          }
          break; 
       case INDIR_OP:
-         //returns a pointer, not sure if any other errors/checks
-         ret->type = ty_query_ptr(sub->type, &id);//ty_query_ptr(sub->type, &id, &next);
+         ret->type = ty_query_ptr(sub->type, &id);
       default:
          break;
    }
    return ret;
 }
-/* gram: expression (1st production), simple_expression (2nd production; 3rd, 4th, and 5th productions are optional), term (2nd production; 3rd is optional), standard_functions (3rd production -- if 2 arguments (optional))
-   Returns a new BINOP node based on the op and the two subexpressions:
-   1. If op expects r-value(s), then DEREF nodes are added as needed (the only
-      binary op that expects an l-value is assignment, which expects an
-      l-value on the left and an r-value on the right).
-   2. Both left and right are unary-converted as above.
-   3. Both left and right are binary converted (the only binary conversion
-      requiring a convert node is long int->double).
-   4. Currently, no binary operations are allowed on string constants except
-      = and <> (EQ and NE), so if both subexpressions are string constants,
-      they are converted to chars if possible (only if they are length 1).
-      If one argument is a string constant and the other is of type char,
-      then also try to convert the string constant.
-   5. The rest of the behavior depends on the op (switch statement) and the
-      typetags of the subexpressions, including error-checking and
-      constant-folding (for example, arithmetic ops can't act on nonnumeric
-      types).
+/* Creates a new BINOP node with op as an operation and left/right expressions.                
+   Also creates DEREF nodes and conversions if necessary.  Also does some error checking.              
+   Return: the new node 
 */
-
-/************************************************************************
- * Creates a new BINOP node with op and expr left, right                *
- * Also creates DEREF nodes and conversions if necessary                *
- *                                                                      *
- * Return: the new node                                                 *
- ************************************************************************/
 EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
    TYPETAG left_type = ty_query(left->type);
    TYPETAG right_type = ty_query(right->type);
-   long low, high;
    TYPE base_type;
+   long low, high;
 
-   if (left->tag == ERROR || right->tag == ERROR) {
+   if (left->tag == ERROR || right->tag == ERROR)
       return make_error_expr();
-   }
 
-   /*new node variables*/
    EXPR ret = (EXPR)malloc(sizeof(EXPR_NODE));
    assert(ret != NULL);
-
    ret->tag = BINOP;
    ret->u.binop.op = op;
-   ret->u.binop.left = left;//initially
-   ret->u.binop.right = right;//initially
-   ret->type = left->type; //initially
+   ret->u.binop.left = left;
+   ret->u.binop.right = right;
+   ret->type = left->type;
 
+   /* Error checks */
    if (op == ASSIGN_OP) {
-		  if(right->tag == STRCONST && ty_query(left->type)==TYUNSIGNEDCHAR)
-      {
+	  if(right->tag == STRCONST && ty_query(left->type)==TYUNSIGNEDCHAR){
           right->tag = INTCONST;
           right->u.intval = get_single_char(right->u.strval);
       }
@@ -1155,27 +1065,31 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
 		error("Illegal conversion");
          return make_error_expr();
 	  }
+	 //Boolean is TYSIGNEDCHAR
+	  /*else if(left_type == TYSIGNEDCHAR && right_type == TYSIGNEDLONGINT){
+				error("Illegal conversion1");
+				return make_error_expr();
+	  }*/
 	  /*else if((left_type == TYUNSIGNEDCHAR || left_type ==
     TYSIGNEDCHAR) && (right_type == TYSIGNEDLONGINT)){
-		error("Illegal conversion for boolean");
          return make_error_expr();
 	  }*/
     }
 
-   //if op expects r-values, insert DEREF nodes if
+   /* Insert DEREF node if expecting an l-value */
    if (is_lval(left) == TRUE) {
       if (op != ASSIGN_OP) {
          EXPR derefNode = make_un_expr(DEREF_OP, left);
-         ret->u.binop.left = derefNode; //left expr now points to deref
+         ret->u.binop.left = derefNode;
       }
    }
-
+   /* Insert DEREF node if expecting an l-value */
    if (is_lval(right) == TRUE) {
       EXPR derefNode = make_un_expr(DEREF_OP, right);
-      ret->u.binop.right = derefNode; //right expr now points to deref
+      ret->u.binop.right = derefNode;
    }
 
-   //perform unary conversions on left and right
+   /* Perform unary conversions on left and right */
    left_type = ty_query(left->type);
    right_type = ty_query(right->type);
    if (is_lval(left) == FALSE) {
@@ -1203,10 +1117,9 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
       }
    }
 
-   //perform binary conversions on left and right
+   /* Perform binary conversions on left and right */
    left_type = ty_query(ret->u.binop.left->type);
    right_type = ty_query(ret->u.binop.right->type);
-
    if (left_type == TYSIGNEDLONGINT && right_type == TYDOUBLE) {
       EXPR convertedNode = make_un_expr(CONVERT_OP, left);
       convertedNode->type = ty_build_basic(TYDOUBLE);
@@ -1218,13 +1131,15 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
       ret->u.binop.right = convertedNode;
    }
    
+   /* Convert from float to double for add, sub, mul, realdiv and set the appropriate return types 
+      For comparisons, convert char to int and set the return type as TYSIGNEDLONGINT */
    left_type = ty_query(ret->u.binop.left->type);
    right_type = ty_query(ret->u.binop.right->type);
    switch(op) {
       case ADD_OP:
       case SUB_OP:
       case MUL_OP:           
-      case REALDIV_OP: //add, sub, mul will fall through to here
+      case REALDIV_OP: /* add, sub, mul will fall through to here */
 		  if(left_type == TYFLOAT){	
 				left_type = TYDOUBLE;			
 				EXPR convertedNode = make_un_expr(CONVERT_OP, left);
@@ -1246,10 +1161,8 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
       				convertedNode->type = ty_build_basic(TYDOUBLE);
       				ret->u.binop.left = convertedNode;
 		 		}
-		  }
-		  
-		
-      case MOD_OP: //check the types, only numbers
+		  }		
+      case MOD_OP:
          if ((right_type != TYDOUBLE && right_type != TYSIGNEDLONGINT) || (left_type != TYDOUBLE && left_type != TYSIGNEDLONGINT)) {
             error("Nonnumerical type argument(s) to arithmetic operation");
             return make_error_expr();
@@ -1262,29 +1175,36 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
          }
          break;
       case DIV_OP:
-         ret->type = ty_build_basic(TYSIGNEDLONGINT);
+		 if(right_type == TYSIGNEDLONGINT && left_type == TYSIGNEDLONGINT)
+         	ret->type = ty_build_basic(TYSIGNEDLONGINT);
+		 else
+			error("Integer division requires integers!");
          break;
-      case LESS_OP://Fall through for <, <=, =, !=, >=, >
+      case LESS_OP:/* Fall through for <, <=, =, !=, >=, > */
       case EQ_OP:
       case NE_OP:
       case GE_OP:
       case GREATER_OP: 		
       case LE_OP:
+          //TODO: Still need checks for 100.err
 		  /*Type check*/
 		  //error("right %d left %d", right_type, left_type);
           /*if((right_type != TYSIGNEDLONGINT || right_type != TYFLOAT || right_type != TYDOUBLE || right_type != TYUNSIGNEDCHAR || right_type != TYSIGNEDCHAR) && (left_type != TYSIGNEDLONGINT || left_type != TYFLOAT || left_type != TYDOUBLE || left_type != TYUNSIGNEDCHAR || left_type != TYSIGNEDCHAR))*/
-		  if(right_type != left_type)
-          { 
+		  if(right_type != left_type){ 
+			//error("left %d, right %d",left_type, right_type);
 			if(right_type != TYSIGNEDCHAR && left_type == TYSIGNEDLONGINT){
             	error("Illegal conversion");
             	return make_error_expr();
 			}
-			else if(left_type != TYSIGNEDCHAR && right_type == TYSIGNEDLONGINT){
-			    error("Illegal conversion");
+			else if((left_type == TYFLOAT && right_type == TYSIGNEDLONGINT) || (left_type == TYSIGNEDLONGINT && right_type == TYFLOAT)){
+				error("Incompatible type arguments to comparison operator");
             	return make_error_expr();
 			}
-          }
-          
+			else if(left_type != TYSIGNEDCHAR && right_type == TYSIGNEDLONGINT){
+			    error("Illegal conversion");
+				return make_error_expr();
+			}
+          }          
          if (right_type == TYSIGNEDCHAR || right_type == TYUNSIGNEDCHAR) {
             EXPR convertedNode = make_un_expr(CONVERT_OP, right);
             convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
@@ -1298,46 +1218,46 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
          ret->type = ty_build_basic(TYSIGNEDLONGINT);       
          break;
       case ASSIGN_OP:
+		  //error("in assign op, LEFT%d, RIGHT%d", left_type, right_type);
+		  if(left_type != right_type){
+		  	/*if(left_type == TYSIGNEDCHAR && right_type != TYSIGNEDCHAR){
+				error("Illegal conversion1");
+				return make_error_expr();
+			}*/
+			if(left_type == TYUNSIGNEDCHAR && right_type != TYUNSIGNEDCHAR){
+				error("Illegal conversion");
+				return make_error_expr();
+			}
+			if(left_type == TYSIGNEDLONGINT && right_type == TYSIGNEDCHAR){
+				error("Illegal conversion");
+				return make_error_expr();
+			}
+		  }
           break;
       default:
          break;
    }
-
    return ret;
 }
-/* gram: assignment_or_call_statement
-   If lhs is a simple identifier, then id is the corresponding ST_ID.
-   Case 1 -- rhs is non-NULL: Then this is probably an assignment statement --
-      returns a new BINOP with tag ASSIGN_OP and lhs and rhs as operands.
-      EXCEPTION: if id is the id of the current function (the one whose body
-      we are in), then this is a return value assignment; checks that the
-      function has non-void return type, then returns a new UNOP with type
-      the return type of the function, and op SET_RETURN_OP.
-   Case 2 -- rhs is NULL: Then this is not an assignment and id is ignored.
-      If lhs is either New or Dispose, then this is the entire expression
-      and so just return lhs.  Otherwise the behavior depends on the lhs tag:
-      a) If GID or LFUN, then check that lhs is a Pascal procedure
-         (else error), whence this is a procedure call without arguments;
-         return a new FCALL node.
-      b) If FCALL, then this should be a procedure call (with arguments).
-         Check that the type (the return type of the function) tag is void;
-   else error (a Pascal function call cannot stand alone as a
-   statement).  If ok, then return the FCALL node.
-      c) Any other tag is an error.
+/*
+	Preliminary error checks for assignments and function/procedure calls.  
+ 	If there is a rhs, then it's either an assignment or a function call.
+    Lhs should be a procedure call if there is no rhs.
 */
-EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs) {
+EXPR check_func_or_proc_or_assign(EXPR lhs, ST_ID id, EXPR rhs) {
 
    PARAM_LIST params;
-   BOOLEAN check;
+   BOOLEAN check_args;
 
-   //case1, if rhs non null, then return binop node with assign_op
+   /* Either an assignment or function */
    if (rhs != NULL) {
-      //exception if id is id of current function
-      if (id == func_id_stack[fi_top] && fi_top >= 0) {
-         if (ty_query(ty_query_func(lhs->type, &params, &check)) != TYVOID) {
-            //return type is nonvoid
+      /* If id = to id on the function stack */
+      if (stack_counter >= 0 && id == func_id_stack[stack_counter]) {
+         /* If not a procedure, procedures don't return a value so they can't set a lhs */
+         if (ty_query(ty_query_func(lhs->type, &params, &check_args)) != TYVOID) {
+			/* Create a Return node */
             EXPR ret = make_un_expr(SET_RETURN_OP, rhs);
-            ret->type = ty_query_func(lhs->type, &params, &check);
+            ret->type = ty_query_func(lhs->type, &params, &check_args);
             return ret;
          }
          else {
@@ -1346,22 +1266,20 @@ EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs) {
          }
       }
       else {
-         //returns binop with ASSIGN_OP
+		 /* Not a function call, so just make a ASSIGN node */
          EXPR ret = make_bin_expr(ASSIGN_OP, lhs, rhs);
          return ret;
       }
-   }
-   
-   //case2, rhs is NULL
-   else {
+   }else {
+	  /* If lhs if a unary op */
       if (lhs->tag == UNOP) {
-         if (lhs->u.unop.op == NEW_OP || lhs->u.unop.op == DISPOSE_OP) {
+		 /* Just return the lhs if a new or dispose operation */
+         if (lhs->u.unop.op == NEW_OP || lhs->u.unop.op == DISPOSE_OP)
             return lhs;
-         }
-      }
-   
+      }   
+	  /* If lhs is a global id or local function */
       if (lhs->tag == GID || lhs->tag == LFUN) {
-         //check that lhs is a pascal procedure
+		 /* If a function then make a procedure node */
          if (ty_query(lhs->type) == TYFUNC) {
             EXPR ret = make_fcall_expr(lhs, NULL);
             return ret;
@@ -1371,11 +1289,11 @@ EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs) {
             return make_error_expr();      
          }
       }
+	  /* If lhs is a function call */
       else if (lhs->tag == FCALL) {
-         //check the return type is void
-         if (ty_query(lhs->type) == TYVOID) {
+		 /* Should be a procedure call, just return the lhs */
+         if (ty_query(lhs->type) == TYVOID)
             return lhs;
-         }
          else {
             error("Procedure call to a nonvoid type");
             return make_error_expr();
@@ -1384,36 +1302,34 @@ EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs) {
       else if (lhs->tag == ERROR){ 
          return make_error_expr();
       }
-	  else{ //any other tag is error
+	  else{
          error("Procedure call expected");
          return make_error_expr();
       }
    }
 }   
 
-/************************************************************************
- * Checks that both lo and hi are INTCONSTS of the same type, also      *
- * checks that the second index is larger than the first                * 
- * Previous check_subrange function took in long parameters             *
- *                                                                      *
- * Return: new subrange type                                            *
- ************************************************************************/
+/* This function checks if the second index of the subrange is larger than the first, then it buids the subrange type.
+   It take two parameters; both an Expression representing the first and second indexes. 
+   As an output it returns a type object; if the error is issued then an error type is returned else the original type 
+   is returned                                            
+*/
 TYPE check_subrange(EXPR lo, EXPR hi) {
    long low, high;
 
-   // check if INTCONSTS
+   /* Check if INTCONSTS */
    if (lo->tag != INTCONST || hi->tag != INTCONST) {
       error("Subrange indexs are not Integers");
       return ty_build_basic(TYERROR);
    }
 
-   // create new subrange type if lo < hi
+   /* create new subrange type if lo < hi */
    low = lo->u.intval;
    high = hi->u.intval;
 
-   if (low < high) {
+   if (low < high)
       return ty_build_subrange(ty_build_basic(TYSIGNEDLONGINT), low, high);
-   }
+
    
    error("Empty subrange in array index");
    error("Illegal index type (ignored)");

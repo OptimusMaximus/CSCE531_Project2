@@ -185,11 +185,13 @@ int get_align(TYPE type){
     }
 }
 
+/* Function to encode an expression
+   Calls the appropriate encode function for unary, binop, and function calls.
+*/
 void encode_expr(EXPR expr)
 {    
     if (expr == NULL)
         bug("Expression is null ");
-	//printf("In encode expr, expr->tag is %d \n", expr->tag);
     switch (expr->tag) {
         case LFUN: //expr->tag = 4
         case ERROR: break; //expr->tag = 10
@@ -234,6 +236,8 @@ void encode_expr(EXPR expr)
             break;
     }
 }
+
+/* Function to encode a unary operation */
 void encode_unop(EXPR_UNOP op, EXPR expr)
 {
     long low, high;
@@ -321,17 +325,13 @@ void encode_unop(EXPR_UNOP op, EXPR expr)
     }
 }
 
+/* Function to encode a binary operation */
 void encode_binop(EXPR_BINOP out, EXPR expr)
 {
   TYPETAG type_tag;
   TYPETAG left_type_tag, right_type_tag;
 
-  /*typedef enum {
-    INTCONST, REALCONST, STRCONST, GID, LVAR, LFUN, NULLOP, UNOP, BINOP,
-    FCALL, ERROR
-	} EXPR_TAG;*/
-  //error("encode_binop left_tag = %d right_tag %d \n\n", expr->u.binop.left->tag, expr->u.binop.right->tag);
-
+//TODO: Still working on constant folding
 //Constant folding done here
 //add SUB, MUL, succ, chr, ord, chr, DIV, MOD, 
 if(expr->u.binop.left->tag==INTCONST && expr->u.binop.right->tag==INTCONST)
@@ -446,8 +446,7 @@ else if(expr->u.binop.left->tag==REALCONST && expr->u.binop.right->tag==UNOP){
 //             break;
 //     }
 // }
-else
-{
+else {
 	////printf("\n\n\nbefore   encode_expr(expr->u.binop.left); \n\n\n");
   encode_expr(expr->u.binop.left);
 //if(expr->u.binop.right->tag==INTCONST)
@@ -456,7 +455,8 @@ else
   encode_expr(expr->u.binop.right);
 
   type_tag = ty_query(expr->type);
-  if(type_tag == TYFLOAT) type_tag = TYDOUBLE;
+  if(type_tag == TYFLOAT) 
+	type_tag = TYDOUBLE;
 
   left_type_tag = ty_query(expr->u.binop.left->type);
   right_type_tag = ty_query(expr->u.binop.right->type);
@@ -502,55 +502,55 @@ else
         b_assign(left_type_tag);
         b_pop();
         break;
+   }
   }
 }
-}
 
+/* Function to encode a function call */
 void encode_fcall(EXPR func, EXPR_LIST args)
 {
     int arg_list_size;
-    EXPR_LIST t_arg;
-    char *func_gname;
+    char *func_glob_name;
     TYPE func_ret_type;
     TYPETAG arg_tag;
     PARAM_LIST func_params;
     BOOLEAN check_args;
+	EXPR_LIST args_copy;
 
     func_ret_type = ty_query_func(func->type, &func_params, &check_args);
     arg_list_size = 0;
-    t_arg = args;
+    args_copy = args;
 
     if(func->tag == GID)
-        func_gname = st_get_id_str(func->u.gid);
-    t_arg = args;
-    while(t_arg != NULL) {
+        func_glob_name = st_get_id_str(func->u.gid);
 
-        if(ty_query(t_arg->expr->type)==TYDOUBLE||ty_query(t_arg->expr->type)==TYFLOAT)
+    while(args_copy != NULL) {
+        if(ty_query(args_copy->expr->type)==TYDOUBLE||ty_query(args_copy->expr->type)==TYFLOAT)
             arg_list_size += 8;
         else
             arg_list_size += 4;
 
-        t_arg=t_arg->next;
+        args_copy = args_copy->next;
     }
 
     b_alloc_arglist(arg_list_size);
-    t_arg = args;
-    while(t_arg != NULL) {
+    args_copy = args;
+    while(args_copy != NULL) {
 
-        encode_expr(t_arg->expr);
-        arg_tag = ty_query(t_arg->expr->type);
+        encode_expr(args_copy->expr);
+        arg_tag = ty_query(args_copy->expr->type);
         if(func_params != NULL) {
             if(func_params->is_ref==TRUE) { 
-                if(is_lval(t_arg->expr)==FALSE)
+                if(is_lval(args_copy->expr)==FALSE)
                   bug("Function argument expected to be lval in encode_fcall_expr");
 
-                if(ty_test_equality(t_arg->expr->type, func_params->type)==FALSE) 
+                if(ty_test_equality(args_copy->expr->type, func_params->type)==FALSE) 
                    error("Parameter types do not match");
 				
                 b_load_arg(TYPTR);
             } 
             else { 
-                if(is_lval(t_arg->expr)==TRUE) 
+                if(is_lval(args_copy->expr)==TRUE) 
                     b_deref(arg_tag);
                 if(arg_tag==TYSIGNEDCHAR||arg_tag==TYUNSIGNEDCHAR) { 
                     b_convert(arg_tag,TYSIGNEDLONGINT);
@@ -565,9 +565,9 @@ void encode_fcall(EXPR func, EXPR_LIST args)
             }
          } 
         else {     
-            //if(is_lval(t_arg->expr)==TRUE) 
+            //if(is_lval(args_copy->expr)==TRUE) 
               //  b_deref(arg_tag); // Maximus commented out
-            if(arg_tag==TYSIGNEDCHAR||arg_tag==TYUNSIGNEDCHAR) { 
+            if(arg_tag==TYSIGNEDCHAR || arg_tag==TYUNSIGNEDCHAR) { 
                 b_convert(arg_tag, TYSIGNEDLONGINT);
                 b_load_arg(TYSIGNEDLONGINT);
             } 
@@ -579,10 +579,10 @@ void encode_fcall(EXPR func, EXPR_LIST args)
                 b_load_arg(arg_tag);
         }
 
-        t_arg=t_arg->next;
+        args_copy=args_copy->next;
 
         if(func_params!=NULL) 
             func_params=func_params->next;
     }
-    b_funcall_by_name(func_gname,ty_query(func_ret_type));
+    b_funcall_by_name(func_glob_name,ty_query(func_ret_type));
 }

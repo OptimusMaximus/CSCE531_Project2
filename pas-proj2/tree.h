@@ -4,9 +4,11 @@
 #include "symtab.h" 
 #include "message.h" 
 
-/* Records the current function identifier to detect return value assigns */
+/* Used for recording the current function id */
+/* Set the func_id_stack to block stack depth */
 extern ST_ID func_id_stack[BS_DEPTH];
-extern int fi_top;
+/* For recording where we are at in the stack */
+extern int stack_counter;
 
 /* Procedure and function prototype directives */
 typedef enum { DIR_EXTERNAL, DIR_FORWARD } DIRECTIVE;
@@ -25,11 +27,7 @@ typedef enum {
 /* Possible unary operators (tags) */
 typedef enum {
     CONVERT_OP, DEREF_OP, NEG_OP, PLUS_OP, ORD_OP, CHR_OP, SUCC_OP, PRED_OP,
-    NEW_OP, DISPOSE_OP, NOT_OP, ABS_OP, SQR_OP, SIN_OP, COS_OP, EXP_OP, LN_OP, SQRT_OP, ARCTAN_OP,
-    ARG_OP, TRUNC_OP, ROUND_OP, CARD_OP, ODD_OP, EMPTY_OP, POSITION_OP,
-    LASTPOSITION_OP, LENGTH_OP, TRIM_OP, BINDING_OP, DATE_OP, TIME_OP,
-    UN_EOF_OP, UN_EOLN_OP, INDIR_OP, ADDRESS_OP,
-    SET_RETURN_OP
+    NEW_OP, DISPOSE_OP, NOT_OP, INDIR_OP, ADDRESS_OP, SET_RETURN_OP
 } EXPR_UNOP;
 
 /* Possible binary operators (tags) */
@@ -39,18 +37,19 @@ typedef enum {
     BIN_PRED_OP, ASSIGN_OP
 } EXPR_BINOP;
 
-/* List of multiple variables */
+/* List for multiple variables */
 typedef struct var_id {
     ST_ID id;
     struct var_id *next;
 } VAR_ID, *VAR_ID_LIST;
 
-/* Node to store id and return type for function_heading production in gram.y */
+/* Node to store identifier and return type for function_heading production in gram.y */
 typedef struct func_heading {
     ST_ID	id;
     TYPE	ret_type;
 } FUNC_HEADING;
 
+/* Node to store identifier and expression node */
 typedef struct {
     struct exprnode * expr;
     ST_ID id;
@@ -143,21 +142,34 @@ void exit_func_body(ST_ID id, TYPE ret_type);
 
 void install_params(PARAM_LIST list);
 
-
 EXPR_LIST expr_list_reverse(EXPR_LIST list);
+
 EXPR_LIST expr_prepend(EXPR expr, EXPR_LIST list);
+
 void expr_free(EXPR expr);
+
 void expr_list_free(EXPR_LIST list);
+
 EXPR make_intconst_expr(long val, TYPE type);
+
 EXPR make_realconst_expr(double val);
+
 EXPR make_strconst_expr(char * str);
+
 EXPR make_id_expr(ST_ID id);
+
 EXPR make_null_expr(EXPR_NULLOP op);
+
 EXPR make_un_expr(EXPR_UNOP op, EXPR sub);
+
 EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right);
+
 EXPR make_fcall_expr(EXPR func, EXPR_LIST args);
+
 EXPR make_error_expr();
-EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs);
+
+EXPR check_func_or_proc_or_assign(EXPR lhs, ST_ID id, EXPR rhs);
+
 BOOLEAN is_lval(EXPR expr);
 
 TYPE check_subrange(EXPR lo, EXPR hi);
